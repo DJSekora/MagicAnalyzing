@@ -44,6 +44,8 @@ class Creature extends Permanent
 {
   public int power;
   public int toughness;
+  private int permanantpower;
+  private int permanenttoughness;
   public String creatureType = "";
 
   public Creature(String nname, int ntype, String nctype, String ntext,
@@ -52,6 +54,8 @@ class Creature extends Permanent
     super(nname, ntype, ntext, ncolor, ncost);
     power = np;
     toughness = nt;
+    permanantpower=power;
+    permanenttoughness=toughness;
     creatureType = nctype;
   }
 
