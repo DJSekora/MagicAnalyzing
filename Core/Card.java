@@ -38,6 +38,7 @@ public class Card
   /* We store the set of all cards here for now. Maybe move to file or cache lookup
    * if it becomes a memory concern later. */
   public static Hashtable<String,Card> cardList = new Hashtable<String,Card>();
+  public static Hashtable<String,Effect[]> cardEffects = new Hashtable<String,Effect[]>();
 
   public String name = "";
   public int type;
@@ -97,6 +98,7 @@ public class Card
       String n; // Name
       int t; // Type
       int c; // Color
+      Card card; // The new card
       while(clr.hasNextLine())
       {
         n = clr.nextLine();
@@ -105,15 +107,18 @@ public class Card
         clr.nextLine();
         if((t&CREATURE) > 0)
         {
-          cardList.put(n,new Card(
-                          n,t,clr.nextLine(),clr.nextLine(),clr.nextInt(),clr.nextInt(),c,
+          card = new Card(n,t,clr.nextLine(),clr.nextLine(),clr.nextInt(),clr.nextInt(),c,
                           new int[] {clr.nextInt(),clr.nextInt(),clr.nextInt(),
-                                     clr.nextInt(),clr.nextInt(),clr.nextInt()}));
+                                     clr.nextInt(),clr.nextInt(),clr.nextInt()});
+          addCard(n,card);
         }
         else
-          cardList.put(n,new Card(n,t,clr.nextLine(),c,
+        {
+          card = new Card(n,t,clr.nextLine(),c,
                        new int[] {clr.nextInt(),clr.nextInt(),clr.nextInt(),
-                                  clr.nextInt(),clr.nextInt(),clr.nextInt()}));
+                                  clr.nextInt(),clr.nextInt(),clr.nextInt()});
+          addCard(n, card);
+        }
         if(clr.hasNextLine())
           clr.nextLine();
       }
@@ -121,6 +126,36 @@ public class Card
     }
     catch(IOException e)
     {System.out.println("Error reading card list file.");}
+  }
+
+  // Adds a single card to the card list
+  public static void addCard(String n, Card card)
+  {
+    cardList.put(n,card);
+    addEffect(n,card);
+  }
+
+  // Parses the effects of a single card and adds it to the database
+  public static void addEffect(String n, Card card)
+  {
+    cardEffects.put(n,card.parseEffect());
+  }
+
+  public Effect[] parseEffect()
+  {
+    String[] effs = text.split("\\. ");
+    int numEffs = effs.length;
+    Effect[] ret = new Effect[numEffs];
+    for(int i=0; i<numEffs;i++)
+    {
+      ret[i] = new Effect(effs[i]);
+    }
+    return ret;
+  }
+
+  public Effect[] getEffects()
+  {
+    return cardEffects.get(name);
   }
 
   // Some property checkers

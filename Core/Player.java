@@ -103,6 +103,8 @@ public class Player
       if(hand.remove(c))
       {
         payMana(c);
+        resolveCard(c);
+        graveyard.add(c);
         return true;
       }
     }
@@ -202,6 +204,20 @@ public class Player
     {
       manaPool[i] += c.cost[i];
     }
+  }
+
+  public void resolveCard(Card c)
+  {
+    Effect[] effects = c.getEffects();
+    for(Effect e:effects)
+      switch(e.type)
+      {
+        case Effect.GAIN_LIFE:
+          life += e.amount;
+          break;
+        default:
+          break;
+      }
   }
 
   // Do nothing more!
@@ -328,6 +344,7 @@ public class Player
 
   public void printBoard()
   {
+    System.out.println();
     System.out.print(name + "'s hand: |");
     for(Card c:hand)
       System.out.print(c.name + "|");
@@ -345,6 +362,10 @@ public class Player
     System.out.println();
 
     //System.out.print(name + "'s mana pool: ");
+    System.out.println(name + "'s life total: " + life);
+    System.out.println("Cards in " + name + "'s library: " + library.size());
+    System.out.println("Cards in " + name + "'s graveyard: " + graveyard.size());
+    System.out.println();
   }
 
   public void parseTextCommand(String cmd)
