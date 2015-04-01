@@ -13,6 +13,7 @@ public class MagicTUI
     String command;
     MoveEvaluator eval = new MoveEvaluator();
 
+    // Simple text interface for 2 players (0 is AI, 1 is user)
     while(go)
     {
       command = in.nextLine();
@@ -29,9 +30,12 @@ public class MagicTUI
           currentState.print();
           break;
         case "go":
-          eval.selectMove(currentState.players[0]);
+          if(currentState.turn == 0)
+            eval.selectMove(currentState.players[0]);
+          break;
         default:
-          //for()
+          if(currentState.turn == 1)
+            currentState.players[1].parseTextCommand(command);
           break;
       }
       

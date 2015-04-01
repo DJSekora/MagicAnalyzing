@@ -15,11 +15,15 @@ public class MoveEvaluator
         player.playLand(c);
         return;
       }
+
     // Second pass: make the first move in the list
     for(Card c:options)
     {
       player.playCard(c);
       return;
     }
+
+    // If we can't do anything, end the phase.
+    player.endPhase();
   }
 }

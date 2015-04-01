@@ -35,7 +35,7 @@ public class BoardState
 
     for(int i = 0; i < numplayers; i++)
     {
-      players[i] = new Player("Player " + i);
+      players[i] = new Player("Player " + i, this);
     }
     turn = 0;
     phase = MAIN1;
@@ -61,7 +61,7 @@ public class BoardState
 
     for(int i = 0; i < numplayers; i++)
     {
-      players[i] = new Player(old.players[i]);
+      players[i] = new Player(old.players[i], this);
     }
 
     turn = old.turn;

@@ -23,8 +23,13 @@ public class Player
 
   public String name = "";
 
-  public Player()
+  public BoardState parent;
+
+  // Fresh Player
+  public Player(BoardState par)
   {
+    parent = par;
+
     creatures = new ArrayList<Card>();
     lands = new ArrayList<Card>();
     library = new ArrayList<Card>();
@@ -38,15 +43,15 @@ public class Player
     manaPool = new int[Card.COLORS];
   }
 
-  public Player(String nname)
+  public Player(String nname, BoardState par)
   {
-    this();
+    this(par);
     name = nname;
   }
 
-  public Player(Player pl)
+  public Player(Player pl, BoardState par)
   {
-    this(pl.name);
+    this(pl.name,par);
     life = pl.life;
     for(Card p:pl.creatures)
       creatures.add(new Card(p));
@@ -88,6 +93,7 @@ public class Player
     {
       if(hand.remove(c))
       {
+        payMana(c);
         creatures.add(c);
         return true;
       }
@@ -96,10 +102,118 @@ public class Player
     {
       if(hand.remove(c))
       {
+        payMana(c);
         return true;
       }
     }
     return false;
+  }
+
+  /* For now, we deal with colorless mana in a naive way.
+   * (Ideally, we fold tapping a land for mana in as a "move")
+   * Also, we more or less assume that untapped lands tap for a single color of mana
+   * at a time, for simplicity. Also disregard hybrid costs.
+   * 
+   * Also assume that we won't get here unless we already know we can pay the cost! */
+  public void payMana(Card c)
+  {
+    int[] remCost = new int[Card.COLORS];
+    int cls = Card.COLORS-1; // Index for colorless mana, for convenience.
+    // Pay what we can of colored costs out of mana pools
+    for(int i=0;i<Card.COLORS;i++)
+    {
+      if(manaPool[i]>=c.cost[i])
+      {
+        manaPool[i] -= c.cost[i];
+        remCost[i] = 0;
+      }
+      else
+      {
+        remCost[i] = c.cost[i] - manaPool[i];
+        manaPool[i] = 0;
+      }
+    }
+    // Pay remaining colored costs with appropriate lands
+    for(int i=0;i<cls;i++)
+    {
+      if(remCost[i]>0)
+      {
+        for(Card l:lands)
+        {
+          if(!l.tapped && l.cost[i]>0)
+          {
+            l.tap();
+            remCost[i] -= l.cost[i];
+            if(remCost[i]<=0)
+              break;
+          }
+        }
+      }
+    }
+    
+    // Pay what we can of colorless cost with mana pool, then lands (empty in WUBRG order)
+    if(remCost[cls] > manaPool[cls])
+    {
+      remCost[cls] -= manaPool[cls];
+      manaPool[cls] = 0;
+
+      for(int i=0;i<cls;i++)
+      {
+        if(remCost[cls] > manaPool[i])
+        {
+          remCost[cls] -= manaPool[i];
+          manaPool[i] = 0;
+        }
+        else
+        {
+          manaPool[i] -= remCost[cls];
+          remCost[cls] = 0;
+          break;
+        }
+      }
+      /* Lands for colorless last (don't care about order for now)
+       * Also disregard remaining mana (need to handle lands that produce multiple
+       * mana later) */
+      if(remCost[cls] > 0)
+      {
+        for(Card l:lands)
+        {
+          if(!l.tapped)
+          {
+            l.tap();
+            for(int i=0;i<Card.COLORS;i++)
+              remCost[cls] -= l.cost[i];
+            if(remCost[cls]<=0)
+              break;
+          }
+        }
+      }
+    }
+    else
+    {
+      manaPool[cls] -= remCost[cls];
+    }
+  }
+
+  public void tapLand(Card c)
+  {
+    c.tap();
+    for(int i=0;i<Card.COLORS;i++)
+    {
+      manaPool[i] += c.cost[i];
+    }
+  }
+
+  // Do nothing more!
+  public void endPhase()
+  {
+    // Empty the mana pool
+    for(int i=0;i<Card.COLORS;i++)
+    {
+      manaPool[i] = 0;
+    }
+    // Signal the parent to move on
+    parent.advancePhase();
   }
 
   //Deck stuff (maybe move to Library if we make a class like that)
@@ -233,4 +347,34 @@ public class Player
     //System.out.print(name + "'s mana pool: ");
   }
 
+  public void parseTextCommand(String cmd)
+  {
+    if(cmd.matches("play .*"))
+    {
+      String n = cmd.substring(5);
+      for(Card c:determineAvailableMoves())
+        if(c.name.equalsIgnoreCase(n))
+        {
+          if(c.isLand())
+            playLand(c);
+          else
+            playCard(c);
+          break;
+        }
+    }
+    else if(cmd.matches("tap .*"))
+    {
+      String n = cmd.substring(4);
+      for(Card c:lands)
+        if(!c.tapped && c.name.equalsIgnoreCase(n))
+        {
+          tapLand(c);
+          break;
+        }
+    }
+    else if(cmd.matches("pass"))
+    {
+      endPhase();
+    }
+  }
 }
