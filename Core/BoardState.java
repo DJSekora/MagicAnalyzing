@@ -81,7 +81,7 @@ public class BoardState
     {
       library[i] = loadDeck(deckFile[i]);
       shuffleDeck(i);
-      for(int j=0; j<STARTING_HAND_SIZE; j++)
+      for(int j=0; j<1; j++)
         drawCard(i);
     }
   }
