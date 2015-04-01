@@ -27,6 +27,7 @@ public class Card
   /* Color is also represented as an 8 bit integer, since cards can be multiple colors.
    * For example:
    * 00010001 = 17 represents a green and white card. */
+  public static final int COLORS = 6;
   public static final int COLORLESS = 0;
   public static final int WHITE = 0x1;
   public static final int BLUE = 0x2;

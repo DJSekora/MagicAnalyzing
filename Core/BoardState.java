@@ -1,15 +1,9 @@
 /* Class to represent the board state of a Magic: The Gathering game.
  *
- * We should possibly add a Player object at some point, maybe one who has a
- * Library object and a Hand object and so forth, just for good coding practice.
- *
+ * Much of the content migrated over to Player.java (where it made more sense)
  */
 
 import java.util.ArrayList;
-import java.util.Scanner;
-import java.io.File;
-import java.io.IOException;
-import java.util.Random;
 public class BoardState
 {
   public static final int UNTAP = 0;
@@ -28,48 +22,21 @@ public class BoardState
   public static final int COLORS = 6;
   public static final int STARTING_HAND_SIZE = 7;
 
-  int players = 2;
-
-  public ArrayList<Card>[] creatures;
-  public ArrayList<Card>[] lands;
-
-  public ArrayList<Card>[] library;
-  public ArrayList<Card>[] hand;
-  public ArrayList<Card>[] graveyard;
-  public ArrayList<Card>[] exile;
-
-  public int[][] manaPool;
-
-  public int[] life;
+  int numplayers = 2;
+  Player[] players;
 
   public int turn;
   public int phase;
-  public int landsToPlay = 1;
 
   // Initialize a blank BoardState
   public BoardState()
   {
-    creatures = new ArrayList[players];
-    lands = new ArrayList[players];
-    library = new ArrayList[players];
-    hand = new ArrayList[players];
-    graveyard = new ArrayList[players];
-    exile = new ArrayList[players];
+    players = new Player[numplayers];
 
-    life = new int[players];
-    manaPool = new int[players][COLORS];
-
-    for(int i = 0; i < players; i++)
+    for(int i = 0; i < numplayers; i++)
     {
-      creatures[i] = new ArrayList<Card>();
-      lands[i]= new ArrayList<Card>();
-      library[i] = new ArrayList<Card>();
-      hand[i] = new ArrayList<Card>();
-      graveyard[i] = new ArrayList<Card>();
-      exile[i] = new ArrayList<Card>();
-      life[i] = 20;
+      players[i] = new Player("Player " + i);
     }
-
     turn = 0;
     phase = MAIN1;
   }
@@ -79,49 +46,22 @@ public class BoardState
   public BoardState(String[] deckFile)
   {
     this();
-    for(int i = 0; i < players; i++)
+    for(int i = 0; i < numplayers; i++)
     {
-      library[i] = loadDeck(deckFile[i]);
-      shuffleDeck(i);
-      for(int j=0; j<STARTING_HAND_SIZE; j++)
-        drawCard(i);
+      players[i].loadDeck(deckFile[i]);
+      players[i].shuffleDeck();
+      players[i].drawCards(STARTING_HAND_SIZE);
     }
   }
 
+  // Copy constructor (for AI state evals)
   public BoardState(BoardState old)
   {
-    creatures = new ArrayList[players];
-    lands = new ArrayList[players];
-    library = new ArrayList[players];
-    hand = new ArrayList[players];
-    graveyard = new ArrayList[players];
-    exile = new ArrayList[players];
+    players = new Player[numplayers];
 
-    life = new int[players];
-    manaPool = new int[players][COLORS];
-
-    for(int i = 0; i < players; i++)
+    for(int i = 0; i < numplayers; i++)
     {
-      creatures[i] = new ArrayList<Card>();
-      lands[i]= new ArrayList<Card>();
-      library[i] = new ArrayList<Card>();
-      hand[i] = new ArrayList<Card>();
-      graveyard[i] = new ArrayList<Card>();
-      exile[i] = new ArrayList<Card>();
-      life[i] = old.life[i];
-
-      for(Card p:old.creatures[i])
-        creatures[i].add(new Card(p));
-      for(Card p:old.lands[i])
-        lands[i].add(new Card(p));
-      for(Card c:old.library[i])
-        library[i].add(new Card(c));
-      for(Card c:old.hand[i])
-        hand[i].add(new Card(c));
-      for(Card c:old.graveyard[i])
-        graveyard[i].add(new Card(c));
-      for(Card c:old.exile[i])
-        exile[i].add(new Card(c));
+      players[i] = new Player(old.players[i]);
     }
 
     turn = old.turn;
@@ -153,55 +93,22 @@ public class BoardState
   public void advanceTurn()
   {
     turn++;
-    if(turn >= players)
+    if(turn >= numplayers)
       turn = 0;
-    printMessage("It is now player " + turn + "'s turn.");
+    printMessage("It is now " + players[turn].name + "'s turn.");
     return;
   }
 
   public void doUntap()
   {
-    for(Card p:creatures[turn])
-      p.untap();
-    for(Card p:lands[turn])
-      p.untap();
+    players[turn].untap();
     advancePhase();
   }
 
   public void doDraw()
   {
-    drawCard(turn);
+    players[turn].drawCard();
     advancePhase();
-  }
-
-  public void playLand(int player, Card c)
-  {
-    if(hand[player].remove(c))
-    {
-      lands[player].add(c);
-      landsToPlay--;
-      printMessage("Player " + player + " plays land " + c + ".");
-    }
-    return;
-  }
-
-  public void playCard(int player, Card c)
-  {
-    if(c.isCreature())
-    {
-      if(hand[player].remove(c))
-      {
-        creatures[player].add(c);
-        printMessage("Player " + player + " summons creature " + c + "!");
-      }
-    }
-    else
-    {
-      if(hand[player].remove(c))
-      {
-        printMessage("Player " + player + " plays spell " + c + "!");
-      }
-    }
   }
 
   /* Right now, we just print to standard output, but maybe someday we'll have a GUI or
@@ -211,86 +118,11 @@ public class BoardState
     System.out.println(s);
   }
 
-  // Deck stuff (move to Library when that becomes a thing)
-  public ArrayList<Card> loadDeck(String fname)
-  {
-    ArrayList<Card> ret = new ArrayList<Card>(60);
-    try
-    {
-      Scanner deckReader = new Scanner(new File(fname));
-      int num;
-      String line;
-      while(deckReader.hasNextLine())
-      {
-        num = deckReader.nextInt();
-        line = deckReader.nextLine();
-        line = line.trim(); // Remove leading space
-        for(int i=0;i<num;i++)
-          ret.add(new Card(line));
-      }
-      deckReader.close();
-    }
-    catch(IOException e)
-    {System.out.println("Error reading deck.");}
-    return ret;
-  }
-  
-  /* Randomization algorithm from Tic Tac Oh No random generator.
-   * Apparently this is something called "Fisher-Yates" or Knuths "Algorithm P",
-   * but those references were not used.
-   * Note that this technically might not cover all permutations, depending on how
-   * the random numbers are generated by Random (number of possible seeds might be too
-   * small).
-   *
-   * In the future, maybe implement various simulated shuffle techniques (riffle,
-   * bridge, pile ("Magic shuffle"), clump, etc.).*/
-  public void shuffleDeck(int player)
-  {
-    Random rand = new Random();
-    ArrayList<Card> d = library[player];
-    int open = d.size();
-    int k;
-    Card temp;
-    while(open>0)
-    {
-      k = rand.nextInt(open);
-      open--;
-      if(k!=open)
-      {
-        temp = d.get(k);
-        d.set(k, d.get(open));
-        d.set(open, temp);
-      }
-    }
-  }
-
-  public void drawCard(int player)
-  {
-    hand[player].add(library[player].remove(library[player].size()-1));
-    return;
-  }
-
   public void print()
   {
-    for(int i=0;i<players;i++)
+    for(int i=0;i<numplayers;i++)
     {
-      System.out.print("Player " + i + "'s hand: |");
-      for(Card c:hand[i])
-        System.out.print(c.name + "|");
-      System.out.println();
-
-      System.out.print("Player " + i + "'s creatures: |");
-      for(Card c:creatures[i])
-        System.out.print(c.name + ", " + c.power + "/" + c.toughness + 
-                         (c.tapped ? "(T)" : "") + "|");
-      System.out.println();
-
-      System.out.print("Player " + i + "'s lands: |");
-      for(Card c:lands[i])
-        System.out.print(c.name + (c.tapped ? "(T)" : "") + "|");
-      System.out.println();
-
-      //System.out.print("Player " + i + "'s mana pool: ");
+      players[i].printBoard();
     }
   }
 }

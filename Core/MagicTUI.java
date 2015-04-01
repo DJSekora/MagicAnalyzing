@@ -22,14 +22,14 @@ public class MagicTUI
           go = false;
           break;
         case "moves":
-          for(Card c:eval.determineAvailableMoves(currentState,0))
+          for(Card c:currentState.players[0].determineAvailableMoves())
             System.out.println("Player 0 can play card " + c);
           break;
         case "print":
           currentState.print();
           break;
         case "go":
-          eval.selectMove(currentState,0);
+          eval.selectMove(currentState.players[0]);
         default:
           //for()
           break;
