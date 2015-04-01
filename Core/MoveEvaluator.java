@@ -1,50 +1,76 @@
  import java.util.ArrayList;
 public class MoveEvaluator
 {
-  public static int colors = 6;
+  public static final int COLORS = 6;
 
   public MoveEvaluator()
   {
   }
 
-  public static ArrayList<Move> determineAvailableMoves(BoardState state, int player)
+  // This should MAYBE (PROBABLY) be moved to BoardState
+  public static ArrayList<Card> determineAvailableMoves(BoardState state, int player)
   {
-    int[] mana = new int[colors];
+    int[] mana = new int[COLORS];
 
     // Start by considering mana currently left in pool.
-    for(int i = 0; i<colors;i++)
+    for(int i = 0; i<COLORS;i++)
       mana[i] = state.manaPool[player][i];
 
     /* See what mana we can get from untapped lands
      * For now, we just have lands as tapping for their "cost"*/
-    for(Permanent l:state.lands[player])
-      for(int i=0;i<colors;i++)
+    for(Card l:state.lands[player])
+      for(int i=0;i<COLORS;i++)
         if(!l.tapped)
           mana[i]+=l.cost[i];
 
     int totalMana = 0;
-    for(int i = 0; i<colors; i++)
+    for(int i = 0; i<COLORS; i++)
       totalMana+=mana[i];
 
-    ArrayList<Move> moveList = new ArrayList<Move>();
+    ArrayList<Card> moveList = new ArrayList<Card>();
     for(Card c:state.hand[player])
     {
       boolean canPlay = true;
-      int totalCost = c.cost[colors-1];
-      for(int i = colors-2;i>=0;i--)
+      if(c.isLand())
       {
-        if (mana[i] < c.cost[i])
-        {
-          canPlay = false;
-          break;
-        }
-        totalCost+=c.cost[i];
+        canPlay = (state.landsToPlay > 0);
       }
-      if (totalCost > totalMana)
-        canPlay = false;
+      else
+      {
+        int totalCost = c.cost[COLORS-1];
+        for(int i = COLORS-2;i>=0;i--)
+        {
+          if (mana[i] < c.cost[i])
+          {
+            canPlay = false;
+            break;
+          }
+          totalCost+=c.cost[i];
+        }
+        if (totalCost > totalMana)
+          canPlay = false;
+      }
       if(canPlay)
-        moveList.add(new Move(c));
+        moveList.add(c);
     }
     return moveList;
+  }
+
+  public void selectMove(BoardState state, int player)
+  {
+    ArrayList<Card> options = determineAvailableMoves(state,player);
+    // First pass: play lands
+    for(Card c:options)
+      if(c.isLand())
+      {
+        state.playLand(player, c);
+        return;
+      }
+    // Second pass: make the first move in the list
+    for(Card c:options)
+    {
+      state.playCard(player, c);
+      return;
+    }
   }
 }

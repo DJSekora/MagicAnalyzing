@@ -11,6 +11,8 @@ public class MagicTUI
     currentState = new BoardState(dl);
     boolean go = true;
     String command;
+    MoveEvaluator eval = new MoveEvaluator();
+
     while(go)
     {
       command = in.nextLine();
@@ -19,8 +21,17 @@ public class MagicTUI
         case "quit":
           go = false;
           break;
-        default:
+        case "moves":
+          for(Card c:eval.determineAvailableMoves(currentState,0))
+            System.out.println("Player 0 can play card " + c);
+          break;
+        case "print":
           currentState.print();
+          break;
+        case "go":
+          eval.selectMove(currentState,0);
+        default:
+          //for()
           break;
       }
       

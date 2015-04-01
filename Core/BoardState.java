@@ -30,8 +30,8 @@ public class BoardState
 
   int players = 2;
 
-  public ArrayList<Creature>[] creatures;
-  public ArrayList<Permanent>[] lands;
+  public ArrayList<Card>[] creatures;
+  public ArrayList<Card>[] lands;
 
   public ArrayList<Card>[] library;
   public ArrayList<Card>[] hand;
@@ -41,8 +41,10 @@ public class BoardState
   public int[][] manaPool;
 
   public int[] life;
+
   public int turn;
   public int phase;
+  public int landsToPlay = 1;
 
   // Initialize a blank BoardState
   public BoardState()
@@ -59,8 +61,8 @@ public class BoardState
 
     for(int i = 0; i < players; i++)
     {
-      creatures[i] = new ArrayList<Creature>();
-      lands[i]= new ArrayList<Permanent>();
+      creatures[i] = new ArrayList<Card>();
+      lands[i]= new ArrayList<Card>();
       library[i] = new ArrayList<Card>();
       hand[i] = new ArrayList<Card>();
       graveyard[i] = new ArrayList<Card>();
@@ -100,18 +102,18 @@ public class BoardState
 
     for(int i = 0; i < players; i++)
     {
-      creatures[i] = new ArrayList<Creature>();
-      lands[i]= new ArrayList<Permanent>();
+      creatures[i] = new ArrayList<Card>();
+      lands[i]= new ArrayList<Card>();
       library[i] = new ArrayList<Card>();
       hand[i] = new ArrayList<Card>();
       graveyard[i] = new ArrayList<Card>();
       exile[i] = new ArrayList<Card>();
       life[i] = old.life[i];
 
-      for(Creature p:old.creatures[i])
-        creatures[i].add(new Creature(p));
-      for(Permanent p:old.lands[i])
-        lands[i].add(new Permanent(p));
+      for(Card p:old.creatures[i])
+        creatures[i].add(new Card(p));
+      for(Card p:old.lands[i])
+        lands[i].add(new Card(p));
       for(Card c:old.library[i])
         library[i].add(new Card(c));
       for(Card c:old.hand[i])
@@ -126,6 +128,90 @@ public class BoardState
     phase = old.phase;
   }
 
+  // Advance to the next phase! We skip a lot of phases for now, because reasons.
+  public void advancePhase()
+  {
+    switch(phase)
+    {
+      case UNTAP:
+        phase = DRAW;
+        doDraw();
+        break;
+      case DRAW:
+        phase = MAIN1;
+        break;
+      case MAIN1:
+        advanceTurn();
+        phase = UNTAP;
+        doUntap();
+        break;
+      default:
+        System.out.println("INVALID PHASE REACHED!");
+    }
+  }
+
+  public void advanceTurn()
+  {
+    turn++;
+    if(turn >= players)
+      turn = 0;
+    printMessage("It is now player " + turn + "'s turn.");
+    return;
+  }
+
+  public void doUntap()
+  {
+    for(Card p:creatures[turn])
+      p.untap();
+    for(Card p:lands[turn])
+      p.untap();
+    advancePhase();
+  }
+
+  public void doDraw()
+  {
+    drawCard(turn);
+    advancePhase();
+  }
+
+  public void playLand(int player, Card c)
+  {
+    if(hand[player].remove(c))
+    {
+      lands[player].add(c);
+      landsToPlay--;
+      printMessage("Player " + player + " plays land " + c + ".");
+    }
+    return;
+  }
+
+  public void playCard(int player, Card c)
+  {
+    if(c.isCreature())
+    {
+      if(hand[player].remove(c))
+      {
+        creatures[player].add(c);
+        printMessage("Player " + player + " summons creature " + c + "!");
+      }
+    }
+    else
+    {
+      if(hand[player].remove(c))
+      {
+        printMessage("Player " + player + " plays spell " + c + "!");
+      }
+    }
+  }
+
+  /* Right now, we just print to standard output, but maybe someday we'll have a GUI or
+   * something.... */
+  public void printMessage(String s)
+  {
+    System.out.println(s);
+  }
+
+  // Deck stuff (move to Library when that becomes a thing)
   public ArrayList<Card> loadDeck(String fname)
   {
     ArrayList<Card> ret = new ArrayList<Card>(60);
@@ -194,13 +280,13 @@ public class BoardState
       System.out.println();
 
       System.out.print("Player " + i + "'s creatures: |");
-      for(Creature c:creatures[i])
+      for(Card c:creatures[i])
         System.out.print(c.name + ", " + c.power + "/" + c.toughness + 
                          (c.tapped ? "(T)" : "") + "|");
       System.out.println();
 
       System.out.print("Player " + i + "'s lands: |");
-      for(Permanent c:lands[i])
+      for(Card c:lands[i])
         System.out.print(c.name + (c.tapped ? "(T)" : "") + "|");
       System.out.println();
 

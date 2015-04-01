@@ -53,9 +53,12 @@ public class Card
     color = ncolor;
     cost = ncost;
   }
+  
+  // Copy constructor
   public Card(Card c)
   {
-    this(c.name,c.type,c.text,c.color,c.cost);
+    this(c.name,c.type,c.creatureType,c.text,c.power,c.toughness,c.color,c.cost);
+    tapped = c.tapped;
   }
   public Card(String name)
   {
@@ -99,9 +102,9 @@ public class Card
         t = clr.nextInt();
         c = clr.nextInt();
         clr.nextLine();
-        if((t^CREATURE) == 0)
+        if((t&CREATURE) > 0)
         {
-          cardList.put(n,new CreatureCard(
+          cardList.put(n,new Card(
                           n,t,clr.nextLine(),clr.nextLine(),clr.nextInt(),clr.nextInt(),c,
                           new int[] {clr.nextInt(),clr.nextInt(),clr.nextInt(),
                                      clr.nextInt(),clr.nextInt(),clr.nextInt()}));
@@ -118,22 +121,45 @@ public class Card
     catch(IOException e)
     {System.out.println("Error reading card list file.");}
   }
-}
 
-/* This may or may not just get absorbed by "Card", since it isn't terrible for other
-   cards to just default to 0/0 if it means saving a useless class. We might be able to
-   use this for combat though, and we might also want to make a class for sorceries. */
+  // Some property checkers
+  public boolean isLand()
+  {
+    return ((type&LAND) > 0);
+  }
 
-class CreatureCard extends Card
-{
+  public boolean isCreature()
+  {
+    return ((type&CREATURE) > 0);
+  }
+
+  public String toString()
+  {
+    return name;
+  }
+
+  /* Stuff for permanents (used to be a subclass) */
+
+  public boolean tapped = false;
+
+  public void tap()
+  {
+    tapped = true;
+  }
+  public void untap()
+  {
+    tapped = false;
+  }
+
+  /* Stuff for creatures (used to be a subclass of Permanent) */
   public int power = 0;
   public int toughness = 0;
   public String creatureType = "";
 
-  public CreatureCard(String nname, int ntype, String nctype, String ntext,
+  public Card(String nname, int ntype, String nctype, String ntext,
                   int np, int nt, int ncolor, int[] ncost)
   {
-    super(nname, ntype, ntext, ncolor, ncost);
+    this(nname, ntype, ntext, ncolor, ncost);
     power = np;
     toughness = nt;
     creatureType = nctype;
