@@ -1,4 +1,4 @@
-import java.util.ArrayList;
+ import java.util.ArrayList;
 public class MoveEvaluator
 {
   public static int colors = 6;
@@ -10,10 +10,17 @@ public class MoveEvaluator
   public static ArrayList<Move> determineAvailableMoves(BoardState state, int player)
   {
     int[] mana = new int[colors];
+
+    // Start by considering mana currently left in pool.
     for(int i = 0; i<colors;i++)
       mana[i] = state.manaPool[player][i];
+
+    /* See what mana we can get from untapped lands
+     * For now, we just have lands as tapping for their "cost"*/
     for(Permanent l:state.lands[player])
-      mana[l.color]++;
+      for(int i=0;i<colors;i++)
+        if(!l.tapped)
+          mana[i]+=l.cost[i];
 
     int totalMana = 0;
     for(int i = 0; i<colors; i++)

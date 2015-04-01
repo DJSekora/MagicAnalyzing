@@ -1,0 +1,54 @@
+Plains
+1 0
+
+1 0 0 0 0 0
+Island
+1 0
+
+0 1 0 0 0 0
+Swamp
+1 0
+
+0 0 1 0 0 0
+Mountain
+1 0
+
+0 0 0 1 0 0
+Forest
+1 0
+
+0 0 0 0 1 0
+Normal Guy
+2 1
+Human
+
+1 1
+1 0 0 0 0 0
+Strong Man
+2 1
+Human
+
+2 1
+1 0 0 0 0 1
+Great Hero
+2 1
+Human
+
+3 2
+2 0 0 0 0 1
+Blessing of the Angel
+32 1
+Gain 5 life.
+1 0 0 0 0 1
+Forest Bear
+2 16
+Bear
+
+2 2
+0 0 0 0 1 1
+Giant Wurm
+2 16
+Wurm
+
+6 4
+0 0 0 0 2 4

@@ -11,17 +11,52 @@ public class Permanent
   public int type;
   public String text = "";
   public int color;
+  public int[] cost;
   public BufferedImage image;
-  public Permanent(String nname, int ntype, String ntext, int ncolor)
+
+  public boolean tapped = false;
+
+  public Permanent(String nname, int ntype, String ntext, int ncolor, int[] ncost)
   {
     name = nname;
     type = ntype;
     text = ntext;
     color = ncolor;
+    cost = ncost;
   }
 
   public Permanent(Permanent p)
   {
-    this(p.name,p.type,p.text,p.color);
+    this(p.name,p.type,p.text,p.color, p.cost);
+  }
+
+  public void tap()
+  {
+    tapped = true;
+  }
+  public void untap()
+  {
+    tapped = false;
+  }
+}
+
+class Creature extends Permanent
+{
+  public int power;
+  public int toughness;
+  public String creatureType = "";
+
+  public Creature(String nname, int ntype, String nctype, String ntext,
+                  int np, int nt, int ncolor, int[] ncost)
+  {
+    super(nname, ntype, ntext, ncolor, ncost);
+    power = np;
+    toughness = nt;
+    creatureType = nctype;
+  }
+
+  public Creature(Creature c)
+  {
+    this(c.name,c.type,c.creatureType,c.text,c.power,c.toughness,c.color,c.cost);
   }
 }

@@ -24,6 +24,16 @@ public class Card
   public static final int SORCERY = 0x20;
   public static final int INSTANT = 0x40;
 
+  /* Color is also represented as an 8 bit integer, since cards can be multiple colors.
+   * For example:
+   * 00010001 = 17 represents a green and white card. */
+  public static final int COLORLESS = 0;
+  public static final int WHITE = 0x1;
+  public static final int BLUE = 0x2;
+  public static final int BLACK = 0x4;
+  public static final int RED = 0x8;
+  public static final int GREEN = 0x10;
+
   /* We store the set of all cards here for now. Maybe move to file or cache lookup
    * if it becomes a memory concern later. */
   public static Hashtable<String,Card> cardList = new Hashtable<String,Card>();
@@ -90,15 +100,18 @@ public class Card
         c = clr.nextInt();
         clr.nextLine();
         if((t^CREATURE) == 0)
-          cardList.put(n,new Creature(
+        {
+          cardList.put(n,new CreatureCard(
                           n,t,clr.nextLine(),clr.nextLine(),clr.nextInt(),clr.nextInt(),c,
                           new int[] {clr.nextInt(),clr.nextInt(),clr.nextInt(),
                                      clr.nextInt(),clr.nextInt(),clr.nextInt()}));
+        }
         else
           cardList.put(n,new Card(n,t,clr.nextLine(),c,
                        new int[] {clr.nextInt(),clr.nextInt(),clr.nextInt(),
                                   clr.nextInt(),clr.nextInt(),clr.nextInt()}));
-        clr.nextLine();
+        if(clr.hasNextLine())
+          clr.nextLine();
       }
       clr.close();
     }
@@ -111,13 +124,13 @@ public class Card
    cards to just default to 0/0 if it means saving a useless class. We might be able to
    use this for combat though, and we might also want to make a class for sorceries. */
 
-class Creature extends Card
+class CreatureCard extends Card
 {
-  int power = 0;
-  int toughness = 0;
-  String creatureType = "";
+  public int power = 0;
+  public int toughness = 0;
+  public String creatureType = "";
 
-  public Creature(String nname, int ntype, String nctype, String ntext,
+  public CreatureCard(String nname, int ntype, String nctype, String ntext,
                   int np, int nt, int ncolor, int[] ncost)
   {
     super(nname, ntype, ntext, ncolor, ncost);
