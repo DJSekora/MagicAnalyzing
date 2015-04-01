@@ -51,6 +51,7 @@ public class BoardState
       players[i].loadDeck(deckFile[i]);
       players[i].shuffleDeck();
       players[i].drawCards(STARTING_HAND_SIZE);
+      players[i].stackDeck();
     }
   }
 

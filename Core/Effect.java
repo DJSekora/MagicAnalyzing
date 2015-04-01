@@ -7,12 +7,10 @@ public class Effect
 
   public Effect(String s)
   {
-System.out.println(s);
     if(s.matches("Gain [0-9]* life.*"))
     {
       type = GAIN_LIFE;
       amount = findAmount(s,5);
-System.out.println(amount);
     }
   }
 

@@ -82,6 +82,7 @@ public class Player
     {
       lands.add(c);
       landsToPlay--;
+      System.out.println(name + " plays land " + c.name + ".");
       return true;
     }
     return false;
@@ -95,6 +96,7 @@ public class Player
       {
         payMana(c);
         creatures.add(c);
+        System.out.println(name + " plays " + c.name + ".");
         return true;
       }
     }
@@ -218,6 +220,7 @@ public class Player
         default:
           break;
       }
+    System.out.println(name + " plays " + c.name + ".");
   }
 
   // Do nothing more!
@@ -281,6 +284,17 @@ public class Player
         library.set(open, temp);
       }
     }
+  }
+
+  public void stackDeck()
+  {
+    library.add(new Card("Plains"));
+    library.add(new Card("Blessing of the Angel"));
+    library.add(new Card("Plains"));
+    library.add(new Card("Normal Guy"));
+    library.add(new Card("Plains"));
+    library.add(new Card("Great Hero"));
+    library.add(new Card("Strong Man"));
   }
 
   public void drawCard()
