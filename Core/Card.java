@@ -3,7 +3,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Scanner;
 import java.util.Hashtable;
-public class Card
+public class Card implements Targetable
 {
   /* Card type is represented as an 8 bit integer. For example:
    * 00000110 = 6 represents an artifact creature.
@@ -38,7 +38,7 @@ public class Card
   /* We store the set of all cards here for now. Maybe move to file or cache lookup
    * if it becomes a memory concern later. */
   public static Hashtable<String,Card> cardList = new Hashtable<String,Card>();
-  public static Hashtable<String,Effect[]> cardEffects = new Hashtable<String,Effect[]>();
+  public static Hashtable<String,EffectList> cardEffects = new Hashtable<String,EffectList>();
 
   public String name = "";
   public int type;
@@ -46,6 +46,7 @@ public class Card
   public BufferedImage image;
   public int color;
   public int[] cost;
+  public Player controller;
 
   public Card(String nname, int ntype, String ntext, int ncolor, int[] ncost)
   {
@@ -141,19 +142,14 @@ public class Card
     cardEffects.put(n,card.parseEffect());
   }
 
-  public Effect[] parseEffect()
+  public EffectList parseEffect()
   {
     String[] effs = text.split("\\. ");
     int numEffs = effs.length;
-    Effect[] ret = new Effect[numEffs];
-    for(int i=0; i<numEffs;i++)
-    {
-      ret[i] = new Effect(effs[i]);
-    }
-    return ret;
+    return new EffectList(name, effs);
   }
 
-  public Effect[] getEffects()
+  public EffectList getEffects()
   {
     return cardEffects.get(name);
   }
@@ -190,6 +186,7 @@ public class Card
   /* Stuff for creatures (used to be a subclass of Permanent) */
   public int power = 0;
   public int toughness = 0;
+  public int damage = 0;
   public String creatureType = "";
 
   public Card(String nname, int ntype, String nctype, String ntext,
@@ -199,5 +196,12 @@ public class Card
     power = np;
     toughness = nt;
     creatureType = nctype;
+  }
+
+  public void takeDamage(int amount)
+  {
+    damage += amount;
+    if(damage > toughness)
+      controller.killCreature(this);
   }
 }

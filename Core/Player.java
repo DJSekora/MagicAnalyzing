@@ -3,7 +3,7 @@ import java.util.Scanner;
 import java.io.File;
 import java.io.IOException;
 import java.util.Random;
-public class Player
+public class Player implements Targetable
 {
   public ArrayList<Card> creatures;
   public ArrayList<Card> lands;
@@ -96,7 +96,8 @@ public class Player
       {
         payMana(c);
         creatures.add(c);
-        System.out.println(name + " plays " + c.name + ".");
+        //System.out.println(name + " plays " + c.name + ".");
+        parent.creatureEnteredBattlefield(c);
         return true;
       }
     }
@@ -105,7 +106,7 @@ public class Player
       if(hand.remove(c))
       {
         payMana(c);
-        resolveCard(c);
+        parent.resolveCard(c,this,new Targetable[c.getEffects().size]);
         graveyard.add(c);
         return true;
       }
@@ -208,21 +209,6 @@ public class Player
     }
   }
 
-  public void resolveCard(Card c)
-  {
-    Effect[] effects = c.getEffects();
-    for(Effect e:effects)
-      switch(e.type)
-      {
-        case Effect.GAIN_LIFE:
-          life += e.amount;
-          break;
-        default:
-          break;
-      }
-    System.out.println(name + " plays " + c.name + ".");
-  }
-
   // Do nothing more!
   public void endPhase()
   {
@@ -233,6 +219,36 @@ public class Player
     }
     // Signal the parent to move on
     parent.advancePhase();
+  }
+
+  // Damage on creatures is reset to 0 at end of turn.
+  public void removeCreatureDamage()
+  {
+    for(Card c:creatures)
+    {
+      c.damage = 0;
+    }
+  }
+
+  public void killCreature(Card c)
+  {
+    creatures.remove(c);
+    graveyard.add(c);
+    parent.creatureDied(c);
+  }
+
+  public void gainLife(int amount)
+  {
+    life += amount;
+  }
+
+  public void takeDamage(int amount)
+  {
+    life -= amount;
+    if(life <= 0)
+    {
+      parent.lostGame(this);
+    }
   }
 
   //Deck stuff (maybe move to Library if we make a class like that)

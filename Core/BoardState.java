@@ -82,13 +82,22 @@ public class BoardState
         phase = MAIN1;
         break;
       case MAIN1:
-        advanceTurn();
+        endTurn();
         phase = UNTAP;
         doUntap();
         break;
       default:
         System.out.println("INVALID PHASE REACHED!");
     }
+  }
+
+  public void endTurn()
+  {
+    for (Player p:players)
+    {
+      p.removeCreatureDamage();
+    }
+    advanceTurn();
   }
 
   public void advanceTurn()
@@ -110,6 +119,47 @@ public class BoardState
   {
     players[turn].drawCard();
     advancePhase();
+  }
+
+  // Handle card resolution here for proper scoping
+  public void resolveCard(Card c, Player p, Targetable[] targets)
+  {
+    EffectList effects = c.getEffects();
+    for(int i=0;i<effects.size;i++)
+    {
+      Effect e = effects.get(i);
+      switch(e.type)
+      {
+        case Effect.GAIN_LIFE:
+          p.gainLife(e.amount);
+          break;
+        case Effect.DEAL_DAMAGE_TO_TARGET:
+          targets[i].takeDamage(e.amount);
+          break;
+        default:
+          break;
+      }
+    }
+    //printMessage(p.name + " plays " + c.name + ".");
+  }
+
+  // Handle a player losing the game
+  public void lostGame(Player p)
+  {
+    int i = 0;
+    while (players[i] != p)
+      i++;
+   
+  }
+
+  // Placeholders for future event handling
+  public void creatureEnteredBattlefield(Card c)
+  {
+    
+  }
+  public void creatureDied(Card c)
+  {
+
   }
 
   /* Right now, we just print to standard output, but maybe someday we'll have a GUI or
