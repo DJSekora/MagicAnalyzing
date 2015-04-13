@@ -204,4 +204,11 @@ public class Card implements Targetable
     if(damage > toughness)
       controller.killCreature(this);
   }
+
+  // TODO: Allow destruction of other permanent types.
+  public void destroy()
+  {
+    if(isCreature())
+      controller.killCreature(this);
+  }
 }

@@ -7,6 +7,7 @@ public class Effect
   // Effect types
   public static final int GAIN_LIFE = 1;
   public static final int DEAL_DAMAGE_TO_TARGET = 2;
+  public static final int DESTROY_TARGET = 3;
 
   // Target types
   public static final int NO_TARGET = 0;
@@ -39,6 +40,17 @@ public class Effect
       comp+=s.charAt(i);
     return Integer.parseInt(comp);
   }
+
+  public boolean isTargetedEffect()
+  {
+    return (targetType>0);
+  }
+
+  public boolean canTarget(int type)
+  {
+    return ((targetType & type) > 0);
+  }
+  
 }
 
 // Class to hold the list of effects of a card

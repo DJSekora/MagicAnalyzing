@@ -1,8 +1,10 @@
-* Make better modular structure (Player objects that have a Library and a Hand and so forth).
-
 * Handle multiples of cards better (especially lands)
 
 * Add handling for tokens in Permanent
+
+* Add AI simulation of future boardstates plus a heuristic
+
+* Move spell resolution to BoardState
 
 REACH EXTENSIONS:
 

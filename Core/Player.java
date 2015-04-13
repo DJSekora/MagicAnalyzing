@@ -88,7 +88,13 @@ public class Player implements Targetable
     return false;
   }
 
-  public boolean playCard(Card c)
+  // TODO: Targeted spells
+  public boolean playUserCard(Card c)
+  {
+    return playCard(c,null);
+  }
+
+  public boolean playCard(Card c, Targetable[] t)
   {
     if(c.isCreature())
     {
@@ -106,7 +112,7 @@ public class Player implements Targetable
       if(hand.remove(c))
       {
         payMana(c);
-        parent.resolveCard(c,this,new Targetable[c.getEffects().size]);
+        parent.resolveCard(c,this,t);
         graveyard.add(c);
         return true;
       }
@@ -324,7 +330,7 @@ public class Player implements Targetable
       drawCard();
   }
 
-  public ArrayList<Card> determineAvailableMoves()
+  public ArrayList<Move> determineAvailableMoves()
   {
     int[] mana = new int[Card.COLORS];
 
@@ -343,7 +349,7 @@ public class Player implements Targetable
     for(int i = 0; i<Card.COLORS; i++)
       totalMana+=mana[i];
 
-    ArrayList<Card> moveList = new ArrayList<Card>();
+    ArrayList<Card> playableCardList = new ArrayList<Card>();
     for(Card c:hand)
     {
       boolean canPlay = true;
@@ -367,7 +373,71 @@ public class Player implements Targetable
           canPlay = false;
       }
       if(canPlay)
-        moveList.add(c);
+        playableCardList.add(c);
+    }
+
+    // Find possible combinations of targets for a spell
+    ArrayList<Move> moveList = new ArrayList<Move>();
+    EffectList effs;
+    boolean targeted;
+    int[] targetNums;
+    Effect cur;
+    int numeffs;
+    int totalTargets = 1;
+
+    for(Card c:playableCardList)
+    {
+      effs = c.getEffects();
+      numeffs = effs.size;
+      targeted = false;
+      targetNums = new int[numeffs];
+      for(int i=0;i<numeffs;i++)
+      {
+        cur = effs.get(i);
+        if(cur.isTargetedEffect())
+        {
+          targeted = true;
+          targetNums[i] = parent.countTargetables(cur, this);
+          totalTargets*=targetNums[i];
+        }
+        else
+          targetNums[i] = 1;
+      }
+      if (targeted)
+      {
+        Targetable[][] possibleTargets = new Targetable[numeffs][];
+        for(int i=0; i<numeffs; i++)
+        {
+          cur = effs.get(i);
+          possibleTargets[i] = parent.getTargetables(cur, this);
+        }
+        Targetable[] instanceTargets;
+        int[] ind = new int[numeffs];
+        int bi = 0;
+        while(bi < totalTargets)
+        {
+          instanceTargets = new Targetable[numeffs];
+
+          // Assign a particular set of targets
+          for(int i=0;i<numeffs;i++)
+          {
+            instanceTargets[i] = possibleTargets[i][ind[i]];
+          }
+          moveList.add(new Move(c,instanceTargets));
+
+          // Increment the index (use of bi lets us avoid additional checks here)
+          for(int i=0;i<numeffs;i++)
+          {
+            if(++ind[i] < targetNums[i])
+              break;
+            else
+              ind[i] = 0;
+          }
+          bi++;
+        }
+      }
+      else
+        moveList.add(new Move(c));
     }
     return moveList;
   }
@@ -403,15 +473,19 @@ public class Player implements Targetable
     if(cmd.matches("play .*"))
     {
       String n = cmd.substring(5);
-      for(Card c:determineAvailableMoves())
+      Card c;
+      for(Move m:determineAvailableMoves())
+      {
+        c = m.card;
         if(c.name.equalsIgnoreCase(n))
         {
           if(c.isLand())
             playLand(c);
           else
-            playCard(c);
+            playUserCard(c);
           break;
         }
+      }
     }
     else if(cmd.matches("tap .*"))
     {

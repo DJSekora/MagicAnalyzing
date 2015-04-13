@@ -121,6 +121,79 @@ public class BoardState
     advancePhase();
   }
 
+  /* Find the total number of targetable creatures and players
+   * EXTENSION: Account for untargetable objects, possibly hexproof */
+
+  public int countTargetables(Effect e, Player p)
+  {
+    int numTargets = 0;
+
+    // For now, we can only target creatures and players...
+    if (e.canTarget(Effect.CREATURE))
+    {
+      numTargets += countTargetableCreatures(p);
+    }
+    if (e.canTarget(Effect.PLAYER))
+    {
+      numTargets += countTargetablePlayers(p);
+    }
+    return numTargets;
+  }
+
+  public Targetable[] getTargetables(Effect e, Player p)
+  {
+    int numT = countTargetables(e,p);
+    Targetable[] ret = new Targetable[numT];
+    int i=0;
+
+    // For now, we can only target creatures and players...
+    if (e.canTarget(Effect.CREATURE))
+    {
+      Card[] tc = getTargetableCreatures(p);
+      for(Card t:tc)
+      {
+        ret[i++] = t;
+      }
+    }
+    if (e.canTarget(Effect.PLAYER))
+    {
+      Player[] tp = getTargetablePlayers(p);
+      for(Player t:tp)
+      {
+        ret[i++] = t;
+      }
+    }
+    return ret;
+  }
+
+  public int countTargetableCreatures(Player p)
+  {
+    int ret = 0;
+    for(Player pl:players)
+      ret+=pl.creatures.size();
+    return ret;
+  }
+
+  public Card[] getTargetableCreatures(Player p)
+  {
+    Card[] ret = new Card[countTargetableCreatures(p)];
+    int i = 0;
+    for(Player pl:players)
+      for(Card c:pl.creatures)
+        ret[i++] = c;
+    return ret;
+  }
+
+  public int countTargetablePlayers(Player p)
+  {
+    return numplayers;
+  }
+
+  public Player[] getTargetablePlayers(Player p)
+  {
+    return players;
+  }
+
   // Handle card resolution here for proper scoping
   public void resolveCard(Card c, Player p, Targetable[] targets)
   {
@@ -136,6 +209,8 @@ public class BoardState
         case Effect.DEAL_DAMAGE_TO_TARGET:
           targets[i].takeDamage(e.amount);
           break;
+        case Effect.DESTROY_TARGET:
+          ((Card)targets[i]).destroy();
         default:
           break;
       }

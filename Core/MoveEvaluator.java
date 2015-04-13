@@ -7,23 +7,42 @@ public class MoveEvaluator
 
   public void selectMove(Player player)
   {
-    ArrayList<Card> options = player.determineAvailableMoves();
+    ArrayList<Move> options = player.determineAvailableMoves();
+
     // First pass: play lands
-    for(Card c:options)
-      if(c.isLand())
+    for(Move m:options)
+      if(m.card.isLand())
       {
-        player.playLand(c);
+        player.playLand(m.card);
         return;
       }
 
     // Second pass: make the first move in the list
-    for(Card c:options)
+    // TODO: Targets
+    for(Move m:options)
     {
-      player.playCard(c);
+      player.playCard(m.card,null);
       return;
     }
 
     // If we can't do anything, end the phase.
     player.endPhase();
+  }
+}
+
+class Move
+{
+  public Card card;
+  public Targetable[] targets;
+
+  public Move(Card c)
+  {
+    card = c;
+  }
+
+  public Move(Card c, Targetable[] t)
+  {
+    this(c);
+    targets = t;
   }
 }

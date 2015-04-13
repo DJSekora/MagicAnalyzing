@@ -23,8 +23,10 @@ public class MagicTUI
           go = false;
           break;
         case "moves":
-          for(Card c:currentState.players[0].determineAvailableMoves())
-            System.out.println("Player 0 can play card " + c);
+          for(Move m:currentState.players[0].determineAvailableMoves())
+          {
+            System.out.println("Player 0 can play card " + m.card);
+          }
           break;
         case "print":
           currentState.print();
