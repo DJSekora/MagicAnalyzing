@@ -29,16 +29,43 @@ public class Effect
     {
       type = DEAL_DAMAGE_TO_TARGET;
       amount = findAmount(s, name.length() + 7);
+      targetType = findTargetType(s, (name + amount).length() + 25);
+    }
+    else if(s.matches("Destroy target.*"))
+    {
+      type = DEAL_DAMAGE_TO_TARGET;
+      targetType = findTargetType(s,15);
     }
   }
 
   public static int findAmount(String s, int start)
   {
-    String comp = "" + s.charAt(5);
+    String comp = "" + s.charAt(start);
     int i = start+1;
     while(s.charAt(i) != ' ')
       comp+=s.charAt(i);
     return Integer.parseInt(comp);
+  }
+
+  public static int findTargetType(String s, int start)
+  {
+    int targetType = 0;
+    String[] sub = s.substring(start).split("[ \\.]");
+    for(String ss:sub)
+    {
+      switch(ss)
+      {
+        case "creature":
+          targetType = (targetType|CREATURE);
+          break;
+        case "player":
+          targetType = (targetType|PLAYER);
+          break;
+        default:
+          break;
+      }
+    }
+    return targetType;
   }
 
   public boolean isTargetedEffect()
@@ -55,7 +82,7 @@ public class Effect
 
 // Class to hold the list of effects of a card
 /* I kind of forgot why I wanted to make a special structure like this instead of
- * just using an ArrayList like before.... */
+ * just using an ArrayList like before... maybe to handle targets better?*/
 class EffectList
 {
   int size;
@@ -66,6 +93,15 @@ class EffectList
     list = new Effect[size];
     for(int i=0;i<size;i++)
       list[i] = new Effect(name, effs[i]);
+  }
+
+  public int requiredTargets()
+  {
+    int ret = 0;
+    for(int i=0;i<size;i++)
+      if(list[i].isTargetedEffect())
+        ret++;
+    return ret;
   }
 
   public Effect get(int i)

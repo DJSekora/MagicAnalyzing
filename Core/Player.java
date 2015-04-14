@@ -54,17 +54,23 @@ public class Player implements Targetable
     this(pl.name,par);
     life = pl.life;
     for(Card p:pl.creatures)
-      creatures.add(new Card(p));
+      creatures.add(new Card(p, pl));
     for(Card p:pl.lands)
-      lands.add(new Card(p));
+      lands.add(new Card(p, pl));
     for(Card c:pl.library)
-      library.add(new Card(c));
+      library.add(new Card(c, pl));
     for(Card c:pl.hand)
-      hand.add(new Card(c));
+      hand.add(new Card(c, pl));
     for(Card c:pl.graveyard)
-      graveyard.add(new Card(c));
+      graveyard.add(new Card(c, pl));
     for(Card c:pl.exile)
-      exile.add(new Card(c));
+      exile.add(new Card(c, pl));
+  }
+
+  // For Targetable
+  public String getName()
+  {
+    return name;
   }
 
   public void untap()
@@ -86,12 +92,6 @@ public class Player implements Targetable
       return true;
     }
     return false;
-  }
-
-  // TODO: Targeted spells
-  public boolean playUserCard(Card c)
-  {
-    return playCard(c,null);
   }
 
   public boolean playCard(Card c, Targetable[] t)
@@ -272,7 +272,7 @@ public class Player implements Targetable
         line = deckReader.nextLine();
         line = line.trim(); // Remove leading space
         for(int i=0;i<num;i++)
-          library.add(new Card(line));
+          library.add(new Card(line, this));
       }
       deckReader.close();
     }
@@ -310,13 +310,25 @@ public class Player implements Targetable
 
   public void stackDeck()
   {
-    library.add(new Card("Plains"));
-    library.add(new Card("Blessing of the Angel"));
-    library.add(new Card("Plains"));
-    library.add(new Card("Normal Guy"));
-    library.add(new Card("Plains"));
-    library.add(new Card("Great Hero"));
-    library.add(new Card("Strong Man"));
+    /*
+    //Demo 1
+    library.add(new Card("Plains", this));
+    library.add(new Card("Blessing of the Angel", this));
+    library.add(new Card("Plains", this));
+    library.add(new Card("Normal Guy", this));
+    library.add(new Card("Plains", this));
+    library.add(new Card("Great Hero", this));
+    library.add(new Card("Strong Man", this));
+    */
+    
+    //Demo 2: Red
+    library.add(new Card("Shock", this));
+    library.add(new Card("Lightning Bolt", this));
+    library.add(new Card("Mountain", this));
+    library.add(new Card("Shock", this));
+    library.add(new Card("Lightning Bolt", this));
+    library.add(new Card("Mountain",this));
+    library.add(new Card("Mountain", this));
   }
 
   public void drawCard()
@@ -383,7 +395,7 @@ public class Player implements Targetable
     int[] targetNums;
     Effect cur;
     int numeffs;
-    int totalTargets = 1;
+    int totalTargets;
 
     for(Card c:playableCardList)
     {
@@ -391,6 +403,7 @@ public class Player implements Targetable
       numeffs = effs.size;
       targeted = false;
       targetNums = new int[numeffs];
+      totalTargets = 1;
       for(int i=0;i<numeffs;i++)
       {
         cur = effs.get(i);
@@ -477,12 +490,12 @@ public class Player implements Targetable
       for(Move m:determineAvailableMoves())
       {
         c = m.card;
-        if(c.name.equalsIgnoreCase(n))
+        if(n.equalsIgnoreCase(c.name + m.targetString()))
         {
           if(c.isLand())
             playLand(c);
           else
-            playUserCard(c);
+            playCard(c,m.targets);
           break;
         }
       }

@@ -219,12 +219,16 @@ public class BoardState
   }
 
   // Handle a player losing the game
+  // TODO: Multiplayer
   public void lostGame(Player p)
   {
     int i = 0;
+    /* Find the losing player. Later on, we can remove from the array and
+     * keep playing. */
     while (players[i] != p)
       i++;
-   
+    printMessage(p.name + " lost the game!");
+    System.exit(0);
   }
 
   // Placeholders for future event handling

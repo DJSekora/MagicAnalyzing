@@ -21,7 +21,7 @@ public class MoveEvaluator
     // TODO: Targets
     for(Move m:options)
     {
-      player.playCard(m.card,null);
+      player.playCard(m.card,m.targets);
       return;
     }
 
@@ -44,5 +44,23 @@ class Move
   {
     this(c);
     targets = t;
+  }
+
+  public boolean isTargeted()
+  {
+    return (targets != null);
+  }
+
+  public String targetString()
+  {
+    if(isTargeted())
+    {
+      String ret = "->"+targets[0].getName();
+      for(int i=1;i<targets.length;i++)
+        ret += " && " + targets[i].getName();
+      return ret;
+    }
+    else
+      return "";
   }
 }

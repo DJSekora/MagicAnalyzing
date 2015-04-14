@@ -6,7 +6,7 @@ public class MagicTUI
   {
     Card.loadCardList("cards.txt");
     Scanner in = new Scanner(System.in);
-    String[] dl = {"WhiteDeck.txt","WhiteDeck.txt"};
+    String[] dl = {"RedDeck.txt","RedDeck.txt"};
 
     currentState = new BoardState(dl);
     boolean go = true;
@@ -23,9 +23,10 @@ public class MagicTUI
           go = false;
           break;
         case "moves":
+          //System.out.println(currentState.players[0].determineAvailableMoves().size());
           for(Move m:currentState.players[0].determineAvailableMoves())
           {
-            System.out.println("Player 0 can play card " + m.card);
+            System.out.println("Player 0 can play card " + m.card + m.targetString());
           }
           break;
         case "print":

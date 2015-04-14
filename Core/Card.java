@@ -16,6 +16,8 @@ public class Card implements Targetable
 
   /* No flavor text for now, maybe in the distant future. */
 
+  /* TODO: Differentiate Owner and Controller */
+
   public static final int LAND = 0x1;
   public static final int CREATURE = 0x2;
   public static final int ARTIFACT = 0x4;
@@ -46,7 +48,16 @@ public class Card implements Targetable
   public BufferedImage image;
   public int color;
   public int[] cost;
+
+  /* These are handled externally, be careful! */
   public Player controller;
+  public Player owner; // TODO - incorporate ownership vs controllership
+
+  // Properties of creatures
+  public int power = 0;
+  public int toughness = 0;
+  public int damage = 0;
+  public String creatureType = "";
 
   public Card(String nname, int ntype, String ntext, int ncolor, int[] ncost)
   {
@@ -56,16 +67,37 @@ public class Card implements Targetable
     color = ncolor;
     cost = ncost;
   }
-  
-  // Copy constructor
-  public Card(Card c)
+
+  /* Creature constructor */
+  public Card(String nname, int ntype, String nctype, String ntext,
+                  int np, int nt, int ncolor, int[] ncost)
+  {
+    this(nname, ntype, ntext, ncolor, ncost);
+    power = np;
+    toughness = nt;
+    creatureType = nctype;
+  }
+
+  /* Copy constructor (for pulling cards out of the hashtable, and also for going
+   * from one board state to another, so we can maintain control)*/
+  public Card(Card c, Player contr)
   {
     this(c.name,c.type,c.creatureType,c.text,c.power,c.toughness,c.color,c.cost);
     tapped = c.tapped;
+    damage = c.damage;
+    controller = contr;
   }
-  public Card(String name)
+
+  // Get a card from the hashtable
+  public Card(String name, Player contr)
   {
-    this(cardList.get(name));
+    this(cardList.get(name),contr);
+  }
+
+  // For Targetable
+  public String getName()
+  {
+    return name;
   }
 
   /* Sample format (no leading asterisks or spaces):
@@ -165,6 +197,12 @@ public class Card implements Targetable
     return ((type&CREATURE) > 0);
   }
 
+  // Check if this card requires any targets on cast (maybe unused)
+  public boolean isTargeted()
+  {
+    return (getEffects().requiredTargets()>0);
+  }
+
   public String toString()
   {
     return name;
@@ -183,20 +221,7 @@ public class Card implements Targetable
     tapped = false;
   }
 
-  /* Stuff for creatures (used to be a subclass of Permanent) */
-  public int power = 0;
-  public int toughness = 0;
-  public int damage = 0;
-  public String creatureType = "";
-
-  public Card(String nname, int ntype, String nctype, String ntext,
-                  int np, int nt, int ncolor, int[] ncost)
-  {
-    this(nname, ntype, ntext, ncolor, ncost);
-    power = np;
-    toughness = nt;
-    creatureType = nctype;
-  }
+  /* Methods for creatures (used to be a subclass of Permanent) */
 
   public void takeDamage(int amount)
   {
