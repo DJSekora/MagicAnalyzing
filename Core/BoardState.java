@@ -28,6 +28,10 @@ public class BoardState
   public int turn;
   public int phase;
 
+  // Is this top level
+  public boolean actual;
+  public boolean batch;
+
   // Initialize a blank BoardState
   public BoardState()
   {
@@ -39,6 +43,9 @@ public class BoardState
     }
     turn = 0;
     phase = MAIN1;
+
+    // This is a top level board state
+    actual = true;
   }
 
 
@@ -67,6 +74,8 @@ public class BoardState
 
     turn = old.turn;
     phase = old.phase;
+
+    actual = false;
   }
 
   // Advance to the next phase! We skip a lot of phases for now, because reasons.
@@ -215,7 +224,7 @@ public class BoardState
           break;
       }
     }
-    //printMessage(p.name + " plays " + c.name + ".");
+    printMessage(p.name + " plays " + c.name + ".");
   }
 
   // Handle a player losing the game
@@ -245,6 +254,7 @@ public class BoardState
    * something.... */
   public void printMessage(String s)
   {
+    if(actual && !batch)
     System.out.println(s);
   }
 
