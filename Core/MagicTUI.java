@@ -1,3 +1,5 @@
+/* MagicTUI - Basic Text User Interface for our Magic: The Gathering simulation*/
+
 import java.util.Scanner;
 public class MagicTUI
 {
@@ -23,7 +25,6 @@ public class MagicTUI
           go = false;
           break;
         case "moves":
-          //System.out.println(currentState.players[0].determineAvailableMoves().size());
           for(Move m:currentState.players[0].determineAvailableMoves())
           {
             System.out.println("Player 0 can play card " + m.card + m.targetString());
@@ -41,7 +42,6 @@ public class MagicTUI
             currentState.players[1].parseTextCommand(command);
           break;
       }
-      
     }
     in.close();
   }

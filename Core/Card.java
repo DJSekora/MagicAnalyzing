@@ -88,6 +88,23 @@ public class Card implements Targetable
     controller = contr;
   }
 
+  /* Copy constructor (for going from one board state to another, so we can
+     maintain control). Updates the move n to point to the copy, not the original
+     card.*/
+  public Card(Card c, Player contr, Move m, Move n)
+  {
+    this(c, contr);
+    if(c == m.card)
+      n.card = this;
+    else
+    {
+      int tempmax = m.numTargets();
+      for(int i=0;i<tempmax;i++)
+        if(c == m.targets[i])
+          n.targets[i] = this;
+    }
+  }
+
   // Get a card from the hashtable
   public Card(String name, Player contr)
   {

@@ -24,11 +24,14 @@ public class Player implements Targetable
   public String name = "";
 
   public BoardState parent;
+  public int id;
+  public boolean lost = false; // Kind of useless for 2 player
 
   // Fresh Player
-  public Player(BoardState par)
+  public Player(BoardState par, int nid)
   {
     parent = par;
+    id = nid;
 
     creatures = new ArrayList<Card>();
     lands = new ArrayList<Card>();
@@ -43,28 +46,36 @@ public class Player implements Targetable
     manaPool = new int[Card.COLORS];
   }
 
-  public Player(String nname, BoardState par)
+  public Player(String nname, BoardState par, int id)
   {
-    this(par);
+    this(par, id);
     name = nname;
   }
 
-  public Player(Player pl, BoardState par)
+  public Player(Player pl, BoardState par, Move m, Move n)
   {
-    this(pl.name,par);
+    this(pl.name,par,pl.id);
     life = pl.life;
+    lost = pl.lost;
+
     for(Card p:pl.creatures)
-      creatures.add(new Card(p, pl));
+      creatures.add(new Card(p, pl, m, n));
     for(Card p:pl.lands)
-      lands.add(new Card(p, pl));
+      lands.add(new Card(p, pl, m, n));
     for(Card c:pl.library)
-      library.add(new Card(c, pl));
+      library.add(new Card(c, pl, m, n));
     for(Card c:pl.hand)
-      hand.add(new Card(c, pl));
+      hand.add(new Card(c, pl, m, n));
     for(Card c:pl.graveyard)
-      graveyard.add(new Card(c, pl));
+      graveyard.add(new Card(c, pl, m, n));
     for(Card c:pl.exile)
-      exile.add(new Card(c, pl));
+      exile.add(new Card(c, pl, m, n));
+
+    // Check to see if this player is a target
+    int tempmax = m.numTargets();
+    for(int i=0;i<tempmax;i++)
+      if(pl == m.targets[i])
+        n.targets[i] = this;
   }
 
   // For Targetable
@@ -88,12 +99,21 @@ public class Player implements Targetable
     {
       lands.add(c);
       landsToPlay--;
-      System.out.println(name + " plays land " + c.name + ".");
+      parent.printMessage(name + " plays land " + c.name + ".");
       return true;
     }
     return false;
   }
 
+  /* Execute a move, which usually involves playing a card! */
+  // TODO - Handle lands more smoothly?
+  public boolean applyMove(Move m)
+  {
+    return playCard(m.card,m.targets);
+  }
+
+  /* Play a card! Defer to parent boardstate where appropriate. */
+  // TODO: Counterspells?
   public boolean playCard(Card c, Targetable[] t)
   {
     if(c.isCreature())
@@ -120,7 +140,8 @@ public class Player implements Targetable
     return false;
   }
 
-  /* For now, we deal with colorless mana in a naive way.
+  /* Figure out how to pay mana for a card, tapping additional lands if necessary.
+   * For now, we deal with colorless mana in a naive way.
    * (Ideally, we fold tapping a land for mana in as a "move")
    * Also, we more or less assume that untapped lands tap for a single color of mana
    * at a time, for simplicity. Also disregard hybrid costs.
@@ -333,7 +354,10 @@ public class Player implements Targetable
 
   public void drawCard()
   {
-    hand.add(library.remove(library.size()-1));
+    if(library.size() > 0)
+      hand.add(library.remove(library.size()-1));
+    else
+      parent.lostGame(this);
   }
 
   public void drawCards(int num)

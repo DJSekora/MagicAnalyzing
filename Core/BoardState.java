@@ -39,7 +39,7 @@ public class BoardState
 
     for(int i = 0; i < numplayers; i++)
     {
-      players[i] = new Player("Player " + i, this);
+      players[i] = new Player("Player " + i, this, i);
     }
     turn = 0;
     phase = MAIN1;
@@ -63,13 +63,13 @@ public class BoardState
   }
 
   // Copy constructor (for AI state evals)
-  public BoardState(BoardState old)
+  public BoardState(BoardState old, Move m, Move n)
   {
     players = new Player[numplayers];
 
     for(int i = 0; i < numplayers; i++)
     {
-      players[i] = new Player(old.players[i], this);
+      players[i] = new Player(old.players[i], this, m, n);
     }
 
     turn = old.turn;
@@ -224,20 +224,39 @@ public class BoardState
           break;
       }
     }
-    printMessage(p.name + " plays " + c.name + ".");
+    printMessage(p.name + " plays " + c.name + targetingString(targets)+".");
   }
 
   // Handle a player losing the game
-  // TODO: Multiplayer
+  // TODO: Multiplayer better
   public void lostGame(Player p)
   {
-    int i = 0;
-    /* Find the losing player. Later on, we can remove from the array and
-     * keep playing. */
-    while (players[i] != p)
-      i++;
+    p.lost = true;
     printMessage(p.name + " lost the game!");
-    System.exit(0);
+  }
+
+  // Placeholder for future possible event handling
+  public void wonGame()
+  {
+  }
+
+  public boolean gameOver()
+  {
+    int active = 0;
+    for(Player p:players)
+      if(!p.lost)
+        active++;
+    if(active > 1)
+      return false;
+    return true;
+  }
+
+  public int getWinner()
+  {
+    for(Player p:players)
+      if(!p.lost)
+        return p.id;
+    return -1;
   }
 
   // Placeholders for future event handling
@@ -256,6 +275,20 @@ public class BoardState
   {
     if(actual && !batch)
     System.out.println(s);
+  }
+
+  // Slightly modified version of the one in Move, for prettier printing.
+  public String targetingString(Targetable[] t)
+  {
+    if(t!=null)
+    {
+      String ret = " targeting "+t[0].getName();
+      for(int i=1;i<t.length;i++)
+        ret += " AND " + t[i].getName();
+      return ret;
+    }
+    else
+      return "";
   }
 
   public void print()
