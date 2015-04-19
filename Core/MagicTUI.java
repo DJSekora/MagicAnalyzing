@@ -8,7 +8,7 @@ public class MagicTUI
   {
     Card.loadCardList("cards.txt");
     Scanner in = new Scanner(System.in);
-    String[] dl = {"RedDeck.txt","RedDeck.txt"};
+    String[] dl = {"WhiteDeck.txt","WhiteDeck.txt"};
 
     currentState = new BoardState(dl);
     boolean go = true;
@@ -34,12 +34,13 @@ public class MagicTUI
           currentState.print();
           break;
         case "go":
-          if(currentState.turn == 0)
-            eval.selectMove(currentState.players[0]);
+          if(currentState.priority == 0)
+            eval.stepAI(currentState.players[0]);
           break;
         default:
-          if(currentState.turn == 1)
-            currentState.players[1].parseTextCommand(command);
+          if(currentState.priority == 1)
+            if(currentState.players[1].parseTextCommand(command))
+              eval.stepAI(currentState.players[0]);
           break;
       }
     }

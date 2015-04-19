@@ -10,7 +10,7 @@ public class MagicBatch
 
     Card.loadCardList("cards.txt");
     BoardState currentState;
-    String[] dl = {"RedDeck.txt","RedDeck.txt"};
+    String[] dl = {"WhiteDeck.txt","WhiteDeck.txt"};
     MoveEvaluator eval = new MoveEvaluator();
     boolean go;
 
@@ -23,13 +23,8 @@ public class MagicBatch
       go = true;
       while(go)
       {
-        // TODO: Different AI for each player
-        for(Player p:currentState.players)
-        {
-          while(eval.selectMove(p))
-          {}
-          go = !(currentState.gameOver());
-        }
+        eval.stepAI(currentState.getActivePlayer());
+        go = !(currentState.gameOver());
       }
       win[currentState.getWinner()]++;
     }

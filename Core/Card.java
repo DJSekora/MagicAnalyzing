@@ -59,6 +59,8 @@ public class Card implements Targetable
   public int damage = 0;
   public String creatureType = "";
 
+  public int remPower; // Special field for combat only used during combat damage.
+
   public Card(String nname, int ntype, String ntext, int ncolor, int[] ncost)
   {
     name = nname;
@@ -102,6 +104,42 @@ public class Card implements Targetable
       for(int i=0;i<tempmax;i++)
         if(c == m.targets[i])
           n.targets[i] = this;
+    }
+  }
+
+  /* Copy constructor for attacking */
+  public Card(Card c, Player contr, Card[] m, Card[] n)
+  {
+    this(c, contr);
+    int tempmax = m.length;
+    for(int i=0;i<tempmax;i++)
+      if(c == m[i])
+        n[i] = this;
+  }
+
+  /* Copy constructor for blocking (noncreatures) */
+  public Card(Card c, Player contr, Card[][] m, Card[][] n)
+  {
+    this(c, contr);
+    int tempmax = m.length;
+    for(int i=0;i<tempmax;i++)
+    {
+      if(c == m[i][0])
+        n[i][0] = this;
+      else if(c == m[i][1])
+        n[i][1] = this;
+    }
+  }
+
+  /* Copy constructor for blocking (creatures) */
+  public Card(Card c, Player contr, Card[][] m, Card[][] n, Card[] atkm, Card[] atkn)
+  {
+    this(c, contr, m, n);
+    int tempmax = atkm.length;
+    for(int i=0;i<tempmax;i++)
+    {
+      if(c == atkm[i])
+        atkn[i] = this;
     }
   }
 
@@ -238,12 +276,27 @@ public class Card implements Targetable
     tapped = false;
   }
 
-  /* Methods for creatures (used to be a subclass of Permanent) */
+  public void dealAttackingDamage(Card blk)
+  {
+    int reqamt = blk.toughness - blk.damage;
+    if (remPower > reqamt)
+    {
+      blk.takeDamage(reqamt);
+      remPower-=reqamt;
+    }
+    else
+    {
+      blk.takeDamage(remPower);
+      remPower = 0;
+    }
+  }
+
+  /* Methods for Targetable */
 
   public void takeDamage(int amount)
   {
     damage += amount;
-    if(damage > toughness)
+    if(damage >= toughness)
       controller.killCreature(this);
   }
 

@@ -52,11 +52,24 @@ public class Player implements Targetable
     name = nname;
   }
 
-  public Player(Player pl, BoardState par, Move m, Move n)
+  /* General copy constructor (stuff I don't want to copy 5 times) */
+  public Player(Player pl, BoardState par)
   {
     this(pl.name,par,pl.id);
+
     life = pl.life;
     lost = pl.lost;
+    landsToPlay = pl.landsToPlay;
+
+    for (int i=0; i< Card.COLORS; i++)
+      manaPool[i] = pl.manaPool[i];
+  }
+
+  /* Copy constructor (for going from one board state to another, so we can
+     maintain control). Updates the move n to point to the copies */
+  public Player(Player pl, BoardState par, Move m, Move n)
+  {
+    this(pl, par);
 
     for(Card p:pl.creatures)
       creatures.add(new Card(p, pl, m, n));
@@ -76,6 +89,44 @@ public class Player implements Targetable
     for(int i=0;i<tempmax;i++)
       if(pl == m.targets[i])
         n.targets[i] = this;
+  }
+
+  /* Copy constructor for attacking */
+  public Player(Player pl, BoardState par, Card[] m, Card[] n)
+  {
+    this(pl,par);
+
+    for(Card p:pl.creatures)
+      creatures.add(new Card(p, pl, m, n));
+    for(Card p:pl.lands)
+      lands.add(new Card(p, pl, m, n));
+    for(Card c:pl.library)
+      library.add(new Card(c, pl, m, n));
+    for(Card c:pl.hand)
+      hand.add(new Card(c, pl, m, n));
+    for(Card c:pl.graveyard)
+      graveyard.add(new Card(c, pl, m, n));
+    for(Card c:pl.exile)
+      exile.add(new Card(c, pl, m, n));
+  }
+
+  /* Copy constructor for blocking (have to update the attackers array) */
+  public Player(Player pl, BoardState par, Card[][] m, Card[][] n, Card[] atkm, Card[] atkn)
+  {
+    this(pl,par);
+
+    for(Card p:pl.creatures)
+      creatures.add(new Card(p, pl, m, n, atkm, atkn));
+    for(Card p:pl.lands)
+      lands.add(new Card(p, pl, m, n));
+    for(Card c:pl.library)
+      library.add(new Card(c, pl, m, n));
+    for(Card c:pl.hand)
+      hand.add(new Card(c, pl, m, n));
+    for(Card c:pl.graveyard)
+      graveyard.add(new Card(c, pl, m, n));
+    for(Card c:pl.exile)
+      exile.add(new Card(c, pl, m, n));
   }
 
   // For Targetable
@@ -236,8 +287,8 @@ public class Player implements Targetable
     }
   }
 
-  // Do nothing more!
-  public void endPhase()
+  // Do nothing more! Return true if we don't advance the turn.
+  public boolean endPhase()
   {
     // Empty the mana pool
     for(int i=0;i<Card.COLORS;i++)
@@ -245,7 +296,7 @@ public class Player implements Targetable
       manaPool[i] = 0;
     }
     // Signal the parent to move on
-    parent.advancePhase();
+    return (parent.advancePhase());
   }
 
   // Damage on creatures is reset to 0 at end of turn.
@@ -276,6 +327,19 @@ public class Player implements Targetable
     {
       parent.lostGame(this);
     }
+  }
+
+  // TODO: multiplayer
+  public void declareAttacks(Card[] atk)
+  {
+    for(Card c:atk)
+      c.tap();
+    parent.declareAttackers(atk);
+  }
+
+  public void declareBlocks(Card[][] blk)
+  {
+    parent.declareBlockers(blk);
   }
 
   //Deck stuff (maybe move to Library if we make a class like that)
@@ -331,7 +395,7 @@ public class Player implements Targetable
 
   public void stackDeck()
   {
-    /*
+    
     //Demo 1
     library.add(new Card("Plains", this));
     library.add(new Card("Blessing of the Angel", this));
@@ -340,8 +404,8 @@ public class Player implements Targetable
     library.add(new Card("Plains", this));
     library.add(new Card("Great Hero", this));
     library.add(new Card("Strong Man", this));
-    */
     
+    /*
     //Demo 2: Red
     library.add(new Card("Shock", this));
     library.add(new Card("Lightning Bolt", this));
@@ -349,7 +413,7 @@ public class Player implements Targetable
     library.add(new Card("Shock", this));
     library.add(new Card("Lightning Bolt", this));
     library.add(new Card("Mountain",this));
-    library.add(new Card("Mountain", this));
+    library.add(new Card("Mountain", this));*/
   }
 
   public void drawCard()
@@ -479,6 +543,99 @@ public class Player implements Targetable
     return moveList;
   }
 
+  /* Consider all combinations of attackers */
+  // TODO: Summoning sickness, haste, tapped, choice of target
+  public ArrayList<Card[]> determineAvailableAttackers()
+  {
+    ArrayList<Card[]> attackList = new ArrayList<Card[]>();
+    int maxAt = creatures.size();
+    int tot = (int)Math.pow(2,maxAt);
+    Card[] cur;
+    int numAt;
+    for(int i=0; i < tot; i++)
+    {
+      numAt = countOnes(i);
+      cur = new Card[numAt];
+      int j = 0;
+      int k = 0;
+      while(j < numAt)
+      {
+        if(((i >> k)&1) == 1)
+        {
+          cur[j] = creatures.get(k);
+          j++;
+        }
+        k++;
+      }
+      attackList.add(cur);
+    }
+    return attackList;
+  }
+
+  /* Consider all combinations of blockers 
+   * Format: n*2 array of blocker-attacker pairs.
+   */
+  // TODO: tapped creatures can't block
+
+  public ArrayList<Card[][]> determineAvailableBlockers()
+  {
+    ArrayList<Card[][]> blockList = new ArrayList<Card[][]>();
+    int maxBl = creatures.size();
+    Card[] attackers = parent.getAttackers();
+    if(attackers == null)
+      return blockList;
+    int numAttackers = attackers.length;
+    int adjNumAtk = numAttackers + 1; // Account for no block
+    int tot = (int)Math.pow(adjNumAtk,maxBl); // (attackers + 1)^blockers total
+    Card[][] cur; // Current block we are adding
+    int numbl; // Number of blockers in this block
+    int[] ind = new int[maxBl];
+
+    for(int i=0; i < tot; i++)
+    {
+      numbl = 0;
+      for(int j=0;j<maxBl;j++)
+        if(ind[j] > 0)
+          numbl++;
+      cur = new Card[numbl][2]; // store blocker and corresponding attacker
+      int k = 0;
+      for(int j=0;j<maxBl;j++)
+      {
+        if(ind[j] > 0)
+        {
+          cur[k][0] = creatures.get(j);
+          cur[k][1] = attackers[ind[j] - 1];
+          k++;
+        }
+      }
+  
+      blockList.add(cur);
+
+      // Increment the index (use of i lets us avoid additional checks here)
+      for(int j=0;j<maxBl;j++)
+      {
+        if(++ind[j] < adjNumAtk)
+          break;
+        else
+          ind[j] = 0;
+      }
+    }
+    return blockList;
+  }
+
+  /* Used in determineAvailableAttackers to find how many creatures are
+   * attacking at each i. */
+  public int countOnes(int num)
+  {
+    int count = 0;
+    while(num > 0)
+    {
+      count+=(num & 1);
+      num = (num >> 1);
+    }
+    return count;
+  }
+
   public void printBoard()
   {
     System.out.println();
@@ -505,38 +662,61 @@ public class Player implements Targetable
     System.out.println();
   }
 
-  public void parseTextCommand(String cmd)
+  /* Return true if we need a response from the AI (blocking etc) */
+  public boolean parseTextCommand(String cmd)
   {
-    if(cmd.matches("play .*"))
+    switch(parent.phase)
     {
-      String n = cmd.substring(5);
-      Card c;
-      for(Move m:determineAvailableMoves())
+     case BoardState.MAIN1:
+     case BoardState.MAIN2:
+      if(cmd.matches("play .*"))
       {
-        c = m.card;
-        if(n.equalsIgnoreCase(c.name + m.targetString()))
+        String n = cmd.substring(5);
+        Card c;
+        for(Move m:determineAvailableMoves())
         {
-          if(c.isLand())
-            playLand(c);
-          else
-            playCard(c,m.targets);
-          break;
+          c = m.card;
+          if(n.equalsIgnoreCase(c.name + m.targetString()))
+          {
+            if(c.isLand())
+              playLand(c);
+            else
+              playCard(c,m.targets);
+            break;
+          }
         }
       }
+      else if(cmd.matches("tap .*"))
+      {
+        String n = cmd.substring(4);
+        for(Card c:lands)
+          if(!c.tapped && c.name.equalsIgnoreCase(n))
+          {
+            tapLand(c);
+            break;
+          }
+      }
+      break;
+
+     case BoardState.ATTACK:
+      if(cmd.matches("pass"))
+      {
+        endPhase();
+        return(parent.phase == BoardState.BLOCK);
+      }
+      break;
+     case BoardState.BLOCK:
+      break;
     }
-    else if(cmd.matches("tap .*"))
-    {
-      String n = cmd.substring(4);
-      for(Card c:lands)
-        if(!c.tapped && c.name.equalsIgnoreCase(n))
-        {
-          tapLand(c);
-          break;
-        }
-    }
-    else if(cmd.matches("pass"))
+    if(cmd.matches("pass"))
     {
       endPhase();
     }
+    return false;
+  }
+
+  public String toString()
+  {
+    return "Player " + id;
   }
 }

@@ -6,10 +6,26 @@ public class MoveEvaluator
   public double enemylife = ownlife;
   public double power = 1.0;
   public double toughness = 1.0;
-  public double card = 2.0; // Drawing a card
+  public double card = 2.0; // TODO: Drawing a card
 
   public MoveEvaluator()
   {
+  }
+
+  public boolean stepAI(Player player)
+  {
+    BoardState orig = player.parent;
+    switch(orig.phase)
+    {
+      case BoardState.MAIN1:
+      case BoardState.MAIN2:
+        return selectMove(player);
+      case BoardState.ATTACK:
+        return decideAttack(player);
+      case BoardState.BLOCK:
+        return decideBlock(player);
+    }
+    return false;
   }
 
   /* Take in the player for which we wish to select a move.
@@ -37,10 +53,10 @@ public class MoveEvaluator
     double val;
     int pid = player.id;
 
-    // Second pass: make the first move in the list
+    // Second pass: Test each move, evaluate heuristics, pick the best one
     for(Move m:options)
     {
-      Move n = new Move(m.numTargets()); // Make a blank move of the
+      Move n = new Move(m.numTargets()); // Make a blank move of the same size
       sim = new BoardState(orig,m,n); // Copy the board state, copy move m to n
       simplayer = sim.players[pid]; // Figure out which one is you
       simplayer.applyMove(n);
@@ -61,8 +77,95 @@ public class MoveEvaluator
     else
     {
     // If we can't do anything, end the phase.
-      player.endPhase();
-      return false;
+      return(player.endPhase());
+    }
+  }
+
+  /* Very similar workflow to selectMove */
+  public boolean decideAttack(Player player)
+  {
+    ArrayList<Card[]> options = player.determineAvailableAttackers();
+
+    BoardState orig = player.parent;
+    BoardState sim;
+    Player simplayer;
+    Player blockingplayer;
+    Card[] bestMove = null;
+    // TODO: Consider opponent's moves 
+    double bestVal = 0; // Don't attack if it's disadvantageous
+    double val;
+    int pid = player.id;
+
+    //
+    for(Card[] m:options)
+    {
+      Card[] n = new Card[m.length]; // Make a blank attack list of the same size
+      sim = new BoardState(orig,m,n); // Copy the board state, copy move m to n
+      simplayer = sim.players[pid]; // Figure out which one is you
+      simplayer.declareAttacks(n);
+      blockingplayer = sim.players[1-pid]; // TODO: Multiplayer
+      decideBlock(blockingplayer);
+
+      val = applyHeuristics(pid, orig, sim);
+
+      if(val > bestVal)
+      {
+        bestVal = val;
+        bestMove = m;
+      }
+    }
+
+    if(bestMove!=null)
+    {
+      player.declareAttacks(bestMove);
+      return !(orig.gameOver());
+    }
+    else
+    {
+    // If we can't do anything, end the phase.
+      return(player.endPhase());
+    }
+  }
+
+  public boolean decideBlock(Player player)
+  {
+    ArrayList<Card[][]> options = player.determineAvailableBlockers();
+
+    BoardState orig = player.parent;
+    BoardState sim;
+    Player simplayer;
+    Card[][] bestMove = null;
+    // TODO: Consider opponent's moves 
+    double bestVal = Integer.MIN_VALUE; // Best value so far (cheat a little with MIN)
+    double val;
+    int pid = player.id;
+
+    for(Card[][] m:options)
+    {
+      Card[][] n = new Card[m.length][2]; // Make a blank block list of the same size
+      sim = new BoardState(orig,m,n); // Copy the board state, copy move m to n
+      simplayer = sim.players[pid]; // Figure out which one is you
+      simplayer.declareBlocks(n);
+
+      val = applyHeuristics(pid, orig, sim);
+
+      if(val > bestVal)
+      {
+        bestVal = val;
+        bestMove = m;
+      }
+    }
+
+    // If we want to block....
+    if(bestMove!=null)
+    {
+      player.declareBlocks(bestMove);
+      return !(orig.gameOver());
+    }
+    else
+    {
+    // If we can't do anything, end the phase.
+      return(player.endPhase());
     }
   }
 
@@ -75,7 +178,36 @@ public class MoveEvaluator
     for(int i=0;i<oldbs.numplayers;i++)
       if(i != pid)
         opplifediff -= (newbs.players[i].life - oldbs.players[i].life);
-    return ownlife*mylifediff + enemylife*opplifediff;
+    return ownlife*mylifediff + enemylife*opplifediff +
+           creatureHeuristics(pid,oldbs,newbs);
+  }
+
+  // TODO: Multiplayer
+  public double creatureHeuristics(int pid, BoardState oldbs, BoardState newbs)
+  {
+    double score = 0;
+
+    // Difference in our creatures
+    for(Card c:oldbs.players[pid].creatures)
+    {
+      score -= power*c.power + toughness*c.toughness;
+    }
+    for(Card c:newbs.players[pid].creatures)
+    {
+      score += power*c.power + toughness*c.toughness;
+    }
+
+    // Difference in enemy creatures
+    for(Card c:oldbs.players[1-pid].creatures)
+    {
+      score += power*c.power + toughness*c.toughness;
+    }
+    for(Card c:newbs.players[1-pid].creatures)
+    {
+      score -= power*c.power + toughness*c.toughness;
+    }
+
+    return score;
   }
 }
 

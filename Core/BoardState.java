@@ -27,6 +27,10 @@ public class BoardState
 
   public int turn;
   public int phase;
+  public int priority; // Never pass priority during a simulation as of now!
+
+  public Card[] attackers;
+  public Card[][] blockers;
 
   // Is this top level
   public boolean actual;
@@ -42,6 +46,7 @@ public class BoardState
       players[i] = new Player("Player " + i, this, i);
     }
     turn = 0;
+    priority = 0;
     phase = MAIN1;
 
     // This is a top level board state
@@ -78,26 +83,89 @@ public class BoardState
     actual = false;
   }
 
-  // Advance to the next phase! We skip a lot of phases for now, because reasons.
-  public void advancePhase()
+  // Copy constructor (for AI attack eval)
+  public BoardState(BoardState old, Card[] m, Card[] n)
   {
+    players = new Player[numplayers];
+
+    for(int i = 0; i < numplayers; i++)
+    {
+      players[i] = new Player(old.players[i], this, m, n);
+    }
+
+    turn = old.turn;
+    phase = old.phase;
+
+    actual = false;
+  }
+
+  // Copy constructor (for AI block eval)
+  public BoardState(BoardState old, Card[][] m, Card[][] n)
+  {
+    players = new Player[numplayers];
+    attackers = new Card[old.attackers.length];
+
+    for(int i = 0; i < numplayers; i++)
+    {
+      players[i] = new Player(old.players[i], this, m, n, old.attackers, this.attackers);
+    }
+
+    turn = old.turn;
+    phase = old.phase;
+
+    actual = false;
+  }
+
+  // Advance to the next phase! We skip a lot of phases for now, because reasons.
+  public boolean advancePhase()
+  {
+    priority = turn;
     switch(phase)
     {
       case UNTAP:
         phase = DRAW;
+        printMessage("Phase is now " + phaseName());
         doDraw();
         break;
       case DRAW:
         phase = MAIN1;
+        printMessage("Phase is now " + phaseName());
         break;
       case MAIN1:
+        phase = ATTACK;
+        printMessage("Phase is now " + phaseName());
+        break;
+      case ATTACK:
+        if(attackers == null)
+        {
+          phase = MAIN2;
+        }
+        else
+        {
+          phase = BLOCK;
+          priority = 1-turn; // TODO: Multiplayer
+        }
+        printMessage("Phase is now " + phaseName());
+        break;
+      case BLOCK:
+        phase = DAMAGE;
+        printMessage("Phase is now " + phaseName());
+        doCombatDamage();
+        break;
+      case DAMAGE:
+        phase = MAIN2;
+        printMessage("Phase is now " + phaseName());
+        break;
+      case MAIN2:
         endTurn();
         phase = UNTAP;
+        printMessage("Phase is now " + phaseName());
         doUntap();
-        break;
+        return false; // TODO: Make sure this is ok here
       default:
         System.out.println("INVALID PHASE REACHED!");
     }
+    return true;
   }
 
   public void endTurn()
@@ -114,10 +182,14 @@ public class BoardState
     turn++;
     if(turn >= numplayers)
       turn = 0;
+    priority = 1-turn; // TODO: Multiplayer
     printMessage("It is now " + players[turn].name + "'s turn.");
     return;
   }
 
+
+  /* These phases involve game actions and do not leave time for player action, even
+   * in the full game. */
   public void doUntap()
   {
     players[turn].untap();
@@ -127,6 +199,69 @@ public class BoardState
   public void doDraw()
   {
     players[turn].drawCard();
+    advancePhase();
+  }
+
+  public void declareAttackers(Card[] atk)
+  {
+    attackers = atk;
+    if(actual && !batch)
+    {
+      if(atk != null)
+        printMessage(players[turn].name + " attacks with " + cardArrayToString(atk));
+      else
+        printMessage(players[turn].name + " does not attack.");
+    }
+    advancePhase();
+  }
+
+  public void declareBlockers(Card[][] blk)
+  {
+    blockers = blk;
+    if(actual && !batch)
+    {
+      if(blk != null)
+      {
+        String blockMessage = "";
+        for(Card[] pair:blk)
+        {
+          blockMessage+=" <blocks " + pair[1].name + " with " + pair[0].name + ">";
+        }
+        printMessage(players[turn].name + blockMessage + ".");
+      }
+      else if(getAttackers() != null)
+        printMessage(players[turn].name + " does not block.");
+    }
+    advancePhase();
+  }
+
+  // TODO: Assigning combat damage more intelligently/up to player choice
+  // TODO: Allowing for special creatures that block more than one (not bad)
+  public void doCombatDamage()
+  {
+    if(attackers!=null)
+    {
+      for(Card a:attackers)
+      {
+        a.remPower = a.power;
+      }
+      if(blockers != null && blockers.length > 0)
+        for(Card[] b:blockers)
+        {
+          int blockerAmount = b[0].power;
+          b[1].dealAttackingDamage(b[0]);
+          b[1].takeDamage(blockerAmount);
+        }
+      for(Card a:attackers)
+      {
+        // If we still have all our power left, we didn't do damage to a creature
+        // TODO: Fix interaction with trample-less removal of a creature after blocks
+        if(a.remPower == a.power)
+          getDefendingPlayer().takeDamage(a.power);
+      }
+      attackers = null;
+      blockers = null;
+    }
     advancePhase();
   }
 
@@ -203,6 +338,22 @@ public class BoardState
     return players;
   }
 
+  public Card[] getAttackers()
+  {
+    return attackers;
+  }
+
+  // TODO: Make this actually interesting and useful (multiplayer)
+  public Player getDefendingPlayer()
+  {
+    return players[1-turn];
+  }
+
+  public Player getActivePlayer()
+  {
+    return players[priority];
+  }
+
   // Handle card resolution here for proper scoping
   public void resolveCard(Card c, Player p, Targetable[] targets)
   {
@@ -262,7 +413,7 @@ public class BoardState
   // Placeholders for future event handling
   public void creatureEnteredBattlefield(Card c)
   {
-    
+    printMessage(c.controller + " played " + c + ".");
   }
   public void creatureDied(Card c)
   {
@@ -280,7 +431,7 @@ public class BoardState
   // Slightly modified version of the one in Move, for prettier printing.
   public String targetingString(Targetable[] t)
   {
-    if(t!=null)
+    if(t!=null && t.length>0)
     {
       String ret = " targeting "+t[0].getName();
       for(int i=1;i<t.length;i++)
@@ -291,11 +442,52 @@ public class BoardState
       return "";
   }
 
+  public static String cardArrayToString(Card[] cards)
+  {
+    String ret = "|";
+    for(Card c:cards)
+      ret+=(c.name + "|");
+    return ret;
+  }
+
   public void print()
   {
+    System.out.println("Phase: " + phaseName());
     for(int i=0;i<numplayers;i++)
     {
       players[i].printBoard();
     }
+  }
+
+  public String phaseName()
+  {
+    switch(phase)
+    {
+      case UNTAP:
+        return "Untap";
+      case UPKEEP:
+        return "Upkeep";
+      case DRAW:
+        return "Draw Step";
+      case MAIN1:
+        return "Main Phase 1";
+      case COMBAT:
+        return "Start of Combat";
+      case ATTACK:
+        return "Declare Attackers";
+      case BLOCK:
+        return "Declare Blockers";
+      case DAMAGE:
+        return "Combat Damage Step";
+      case ENDCOMBAT:
+        return "End of Combat Step";
+      case MAIN2:
+        return "Main Phase 2";
+      case END:
+        return "End Step";
+      case CLEANUP:
+        return "Cleanup Step";
+    }
+    return "";
   }
 }
