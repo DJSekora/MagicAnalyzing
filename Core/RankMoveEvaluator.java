@@ -1,5 +1,5 @@
 import java.util.ArrayList;
-public class MoveEvaluator
+public class RankMoveEvaluator
 {
   /* Set of measured attributes.
    * Own life, enemy life, total power, total toughness. */
@@ -9,15 +9,13 @@ public class MoveEvaluator
   public static final int TOUGHNESS = 3;
   public static final int CARDS = 4;
 
-  public double[][] heuristics;
-  
-  //public double card = 2.0; // TODO: Drawing a card
+  public int[][] order;
 
-  public MoveEvaluator(double[] h0, double[] h1)
+  public RankMoveEvaluator(int[] o0, int[] o1)
   {
-    heuristics = new double[2][];
-    heuristics[0] = h0;
-    heuristics[1] = h1;
+    order = new int[2][];
+    order[0] = o0;
+    order[1] = o1;
   }
 
   public boolean stepAI(Player player)
@@ -186,95 +184,50 @@ public class MoveEvaluator
     for(int i=0;i<oldbs.numplayers;i++)
       if(i != pid)
         opplifediff -= (newbs.players[i].life - oldbs.players[i].life);
-    return heuristics[pid][MYLIFE]*mylifediff + heuristics[pid][THEIRLIFE]*opplifediff +
-           creatureHeuristics(pid,oldbs,newbs) + cardHeuristics(pid,oldbs,newbs);
-  }
 
-  /* Heuristics pertaining to creatures */
-  // TODO: Multiplayer
-  public double creatureHeuristics(int pid, BoardState oldbs, BoardState newbs)
-  {
-    double score = 0;
-
-    // Difference in our creatures
+    int powerdiff = 0;
+    int toughnessdiff = 0;
+    
     for(Card c:oldbs.players[pid].creatures)
     {
-      score -= heuristics[pid][POWER]*c.power + heuristics[pid][TOUGHNESS]*c.toughness;
+      powerdiff -= c.power;
+      toughnessdiff -= c.toughness;
     }
     for(Card c:newbs.players[pid].creatures)
     {
-      score += heuristics[pid][POWER]*c.power + heuristics[pid][TOUGHNESS]*c.toughness;
+      powerdiff += c.power;
+      toughnessdiff += c.toughness;
     }
 
     // Difference in enemy creatures
     for(Card c:oldbs.players[1-pid].creatures)
     {
-      score += heuristics[pid][POWER]*c.power + heuristics[pid][TOUGHNESS]*c.toughness;
+      powerdiff += c.power;
+      toughnessdiff += c.toughness;
     }
     for(Card c:newbs.players[1-pid].creatures)
     {
-      score -= heuristics[pid][POWER]*c.power + heuristics[pid][TOUGHNESS]*c.toughness;
+      powerdiff -= c.power;
+      toughnessdiff -= c.toughness;
     }
 
-    return score;
-  }
+    int cardsdiff = newbs.players[pid].hand.size() - oldbs.players[pid].hand.size() + 1;
+    cardsdiff += oldbs.players[1-pid].hand.size() - newbs.players[1-pid].hand.size();
 
-  /* Heuristics pertaining to cards (in hand) */
-// TODO: Multiplayer
-  public double cardHeuristics(int pid, BoardState oldbs, BoardState newbs)
-  {
-    double score = newbs.players[pid].hand.size() - oldbs.players[pid].hand.size() + 1;
-    score += oldbs.players[1-pid].hand.size() - newbs.players[1-pid].hand.size();
-    return score*heuristics[pid][CARDS];
-  }
-
-}
-
-class Move
-{
-  public Card card;
-  public Targetable[] targets;
-
-  // Blank constructor, only used when generating a new simulated move
-  public Move(int targetnum)
-  {
-    targets = new Targetable[targetnum];
-  }
-
-  public Move(Card c)
-  {
-    card = c;
-  }
-
-  public Move(Card c, Targetable[] t)
-  {
-    this(c);
-    targets = t;
-  }
-
-  public boolean isTargeted()
-  {
-    return (targets != null);
-  }
-
-  public int numTargets()
-  {
-    if(targets!=null)
-      return targets.length;
-    else
-      return 0;
-  }
-
-  public String targetString()
-  {
-    if(isTargeted())
+    int numHeurs = order[0].length;
+    int[] values = new int[numHeurs];
+    values[MYLIFE] = mylifediff;
+    values[THEIRLIFE] = opplifediff;
+    values[POWER] = powerdiff;
+    values[TOUGHNESS] = toughnessdiff;
+    values[CARDS] = cardsdiff;
+    for(int i=0;i<numHeurs;i++)
     {
-      String ret = "->"+targets[0].getName();
-      for(int i=1;i<targets.length;i++)
-        ret += " && " + targets[i].getName();
-      return ret;
+      if(values[order[pid][i]] >0)
+        return numHeurs-i;
+      else if(values[order[pid][i]] <0)
+        return i-numHeurs;
     }
-    else
-      return "";
+    return 0;
   }
 }

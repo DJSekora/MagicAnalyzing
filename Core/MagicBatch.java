@@ -7,19 +7,19 @@ public class MagicBatch
 
   public static void main(String[] args)
   {
-    int method = HILL_CLIMBING;
+    int method = EXHAUSTIVE;
     int maxHillSteps = 10;
 
-    int trials = 1000;
+    int trials = 100;
     if(args.length>0)
       trials = Integer.parseInt(args[0]);
 
-    String learnDeck = "RedDeck.txt";
-    String[] dl = {"WhiteDeck.txt","BlackDeck.txt","RedDeck.txt","GreenDeck.txt"};
+    String learnDeck = "BlackDeck.txt";
+    String[] dl = {"WhiteDeck.txt","BlackDeck.txt","RedDeck.txt"};//,"GreenDeck.txt"};
 
-    int numHeurs = 4;
-    double[] heur0 = {1,1,1,1};
-    double[][] heur1 = {{1,3,1,1},{1,2,2,1},{1,4,1,1},{1,1,1,2}};
+    int numHeurs = 5;
+    double[] heur0 = {1,1,1,1,1};
+    double[][] heur1 = {{1,3,1,1,1},{1,2,2,1,2},{1,4,1,1,1}};//,{1,1,1,2,1}};
 
     double[] bestheur = new double[numHeurs];
     for(int i=0;i<numHeurs;i++)
@@ -33,12 +33,12 @@ public class MagicBatch
 
     if(method == EXHAUSTIVE)
     {
-      for(int i=0;i<625;i++)
+      for(int i=0;i<243;i++)
       {
         System.out.println("Testing heuristic " + i);
         for(int j=0;j<numHeurs;j++)
         {
-          if(++heur0[j] < 5)
+          if((heur0[j]+=2) < 5)
             break;
           else
             heur0[j] = 0;

@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.Random;
 public class Player implements Targetable
 {
+  public static final int ATTACK_SEARCH_CUTOFF = 1025;
   public static final int BLOCK_SEARCH_CUTOFF = 100;
 
   public ArrayList<Card> creatures;
@@ -591,22 +592,47 @@ public class Player implements Targetable
     Card[] cur;
     int numAt;
 
-    for(int i=0; i < tot; i++)
+    if(tot > ATTACK_SEARCH_CUTOFF)
     {
-      numAt = countOnes(i);
-      cur = new Card[numAt];
-      int j = 0;
-      int k = 0;
-      while(j < numAt)
+      Random random = new Random();
+      for(int x=0; x < ATTACK_SEARCH_CUTOFF; x++)
       {
-        if(((i >> k)&1) == 1)
+        int i = random.nextInt(tot);
+        numAt = countOnes(i);
+        cur = new Card[numAt];
+        int j = 0;
+        int k = 0;
+        while(j < numAt)
         {
-          cur[j] = possAttackers.get(k);
-          j++;
+          if(((i >> k)&1) == 1)
+          {
+            cur[j] = possAttackers.get(k);
+            j++;
+          }
+          k++;
         }
-        k++;
+        attackList.add(cur);
       }
-      attackList.add(cur);
+    }
+    else
+    {
+      for(int i=0; i < tot; i++)
+      {
+        numAt = countOnes(i);
+        cur = new Card[numAt];
+        int j = 0;
+        int k = 0;
+        while(j < numAt)
+        {
+          if(((i >> k)&1) == 1)
+          {
+            cur[j] = possAttackers.get(k);
+            j++;
+          }
+          k++;
+        }
+        attackList.add(cur);
+      }
     }
     return attackList;
   }

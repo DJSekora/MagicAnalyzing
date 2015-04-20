@@ -48,7 +48,7 @@ Gain 5 life.
 1 0 0 0 0 1
 Sign in Blood
 32 4
-Target player draws 2 cards and loses two life.
+Target player draws 4 cards and loses 2 life.
 0 0 2 0 0 0
 Demon Soldier
 2 4
@@ -100,8 +100,8 @@ A Beast
 2 16
 Beast
 
-3 3
-0 0 0 0 2 0
+3 5
+0 0 0 0 1 3
 Giant Wurm
 2 16
 Wurm
@@ -112,5 +112,5 @@ Gianter Wurm
 2 16
 Wurm
 
-8 8
+7 7
 0 0 0 0 3 5
