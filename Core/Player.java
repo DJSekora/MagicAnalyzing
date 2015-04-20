@@ -5,8 +5,7 @@ import java.io.IOException;
 import java.util.Random;
 public class Player implements Targetable
 {
-  public static final int ATTACK_SEARCH_CUTOFF = 100;
-  public static final int BLOCK_SEARCH_CUTOFF = 10;
+  public static final int BLOCK_SEARCH_CUTOFF = 100;
 
   public ArrayList<Card> creatures;
   public ArrayList<Card> lands;
@@ -321,6 +320,15 @@ public class Player implements Targetable
   public void gainLife(int amount)
   {
     life += amount;
+  }
+
+  public void loseLife(int amount)
+  {
+    life -= amount;
+    if(life <= 0)
+    {
+      parent.lostGame(this);
+    }
   }
 
   public void takeDamage(int amount)
@@ -656,33 +664,37 @@ public class Player implements Targetable
       }
     }
 
-    for(int i=0; i < tot; i++)
+    else
     {
-      numbl = 0;
-      for(int j=0;j<maxBl;j++)
-        if(ind[j] > 0)
-          numbl++;
-      cur = new Card[numbl][2]; // store blocker and corresponding attacker
-      int k = 0;
-      for(int j=0;j<maxBl;j++)
+      for(int i=0; i < tot; i++)
       {
-        if(ind[j] > 0)
+        numbl = 0;
+        for(int j=0;j<maxBl;j++)
+          if(ind[j] > 0)
+            numbl++;
+        cur = new Card[numbl][2]; // store blocker and corresponding attacker
+        int k = 0;
+        for(int j=0;j<maxBl;j++)
         {
-          cur[k][0] = possBlockers.get(j);
-          cur[k][1] = attackers[ind[j] - 1];
-          k++;
+          if(ind[j] > 0)
+          {
+            cur[k][0] = possBlockers.get(j);
+            cur[k][1] = attackers[ind[j] - 1];
+            k++;
+          }
         }
-      }
+      
   
-      blockList.add(cur);
+        blockList.add(cur);
 
-      // Increment the index (use of i lets us avoid additional checks here)
-      for(int j=0;j<maxBl;j++)
-      {
-        if(++ind[j] < adjNumAtk)
-          break;
-        else
-          ind[j] = 0;
+        // Increment the index (use of i lets us avoid additional checks here)
+        for(int j=0;j<maxBl;j++)
+        {
+          if(++ind[j] < adjNumAtk)
+            break;
+          else
+            ind[j] = 0;
+        }
       }
     }
     return blockList;

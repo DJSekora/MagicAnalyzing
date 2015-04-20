@@ -13,7 +13,9 @@ public class MagicTUI
     currentState = new BoardState(dl);
     boolean go = true;
     String command;
-    MoveEvaluator eval = new MoveEvaluator();
+    double[] heur0 = {1,1,1,1};
+    double[] heur1 = {1,2,4,2};
+    MoveEvaluator eval = new MoveEvaluator(heur0, heur1);
 
     // Simple text interface for 2 players (0 is AI, 1 is user)
     while(go)

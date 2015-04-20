@@ -1,15 +1,22 @@
 import java.util.ArrayList;
 public class MoveEvaluator
 {
-  /* Prototype set of measured attributes */
-  public double ownlife = 1.0;
-  public double enemylife = ownlife;
-  public double power = 1.0;
-  public double toughness = 1.0;
-  public double card = 2.0; // TODO: Drawing a card
+  /* Set of measured attributes.
+   * Own life, enemy life, total power, total toughness. */
+  public static final int MYLIFE = 0;
+  public static final int THEIRLIFE = 1;
+  public static final int POWER = 2;
+  public static final int TOUGHNESS = 3;
 
-  public MoveEvaluator()
+  public double[][] heuristics;
+  
+  //public double card = 2.0; // TODO: Drawing a card
+
+  public MoveEvaluator(double[] h0, double[] h1)
   {
+    heuristics = new double[2][];
+    heuristics[0] = h0;
+    heuristics[1] = h1;
   }
 
   public boolean stepAI(Player player)
@@ -178,7 +185,7 @@ public class MoveEvaluator
     for(int i=0;i<oldbs.numplayers;i++)
       if(i != pid)
         opplifediff -= (newbs.players[i].life - oldbs.players[i].life);
-    return ownlife*mylifediff + enemylife*opplifediff +
+    return heuristics[pid][MYLIFE]*mylifediff + heuristics[pid][THEIRLIFE]*opplifediff +
            creatureHeuristics(pid,oldbs,newbs);
   }
 
@@ -190,21 +197,21 @@ public class MoveEvaluator
     // Difference in our creatures
     for(Card c:oldbs.players[pid].creatures)
     {
-      score -= power*c.power + toughness*c.toughness;
+      score -= heuristics[pid][POWER]*c.power + heuristics[pid][TOUGHNESS]*c.toughness;
     }
     for(Card c:newbs.players[pid].creatures)
     {
-      score += power*c.power + toughness*c.toughness;
+      score += heuristics[pid][POWER]*c.power + heuristics[pid][TOUGHNESS]*c.toughness;
     }
 
     // Difference in enemy creatures
     for(Card c:oldbs.players[1-pid].creatures)
     {
-      score += power*c.power + toughness*c.toughness;
+      score += heuristics[pid][POWER]*c.power + heuristics[pid][TOUGHNESS]*c.toughness;
     }
     for(Card c:newbs.players[1-pid].creatures)
     {
-      score -= power*c.power + toughness*c.toughness;
+      score -= heuristics[pid][POWER]*c.power + heuristics[pid][TOUGHNESS]*c.toughness;
     }
 
     return score;

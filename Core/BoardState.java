@@ -373,18 +373,21 @@ public class BoardState
     for(int i=0;i<effects.size;i++)
     {
       Effect e = effects.get(i);
-      switch(e.type)
+      for(int j = 0; j < e.amount.length; j++)
       {
-        case Effect.GAIN_LIFE:
-          p.gainLife(e.amount);
-          break;
-        case Effect.DEAL_DAMAGE_TO_TARGET:
-          targets[i].takeDamage(e.amount);
-          break;
-        case Effect.DESTROY_TARGET:
-          ((Card)targets[i]).destroy();
-        default:
-          break;
+        switch(e.type[j])
+        {
+          case Effect.GAIN_LIFE:
+            p.gainLife(e.amount[j]);
+            break;
+          case Effect.DEAL_DAMAGE_TO_TARGET:
+            targets[i].takeDamage(e.amount[j]);
+            break;
+          case Effect.DESTROY_TARGET:
+            ((Card)targets[i]).destroy();
+          default:
+            break;
+        }
       }
     }
     printMessage(p.name + " plays " + c.name + targetingString(targets)+".");
