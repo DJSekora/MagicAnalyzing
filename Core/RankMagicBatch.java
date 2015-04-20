@@ -27,15 +27,15 @@ public class RankMagicBatch
 
     for(int i=1;i<120;i++)
     {
-      System.out.println("Testing heuristic " + i);
       while(!validOrder(incrementOrder(order0))){}
+      System.out.println("Testing heuristic " + order0[0] + " " + order0[1] + " " + order0[2] + " " + order0[3] + " " + order0[4]);
       double temp = batchMagic(trials, learnDeck, dl, order0, order1);
       if(temp > bestrate)
       {
         bestrate = temp;
         bestorder = new int[numHeurs];
         for(int j=0;j<numHeurs;j++)
-        bestorder[j] = order0[j];
+          bestorder[j] = order0[j];
       }
     }
     
@@ -55,7 +55,7 @@ public class RankMagicBatch
     {
       boolean hasNum=false;
       for(int j=0;j<order.length;j++)
-        if(order[i] == j)
+        if(order[j] == i)
           hasNum = true;
       ok = (ok && hasNum);
     }
