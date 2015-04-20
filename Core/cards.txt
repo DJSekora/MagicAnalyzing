@@ -36,22 +36,40 @@ Human
 
 3 2
 2 0 0 0 0 1
+Eagle
+2 1
+Bird
+
+2 3
+2 0 0 0 0 1
 Blessing of the Angel
 32 1
 Gain 5 life.
 1 0 0 0 0 1
-Forest Bear
-2 16
-Bear
+Sign in Blood
+32 4
+Target player draws 2 cards and loses two life.
+0 0 2 0 0 0
+Demon Soldier
+2 4
+Demon
+
+4 4
+0 0 2 0 0 2
+Extort
+32 4
+Target player loses 2 life. Target player gains 2 life.
+0 0 1 0 0 1
+Murder
+32 4 
+Destroy target creature.
+0 0 2 0 0 1
+Wandering Zombie
+32 4
+Zombie
 
 2 2
-0 0 0 0 1 1
-Giant Wurm
-2 16
-Wurm
-
-6 4
-0 0 0 0 2 4
+0 0 1 0 0 1
 Puny Goblin
 2 8
 Goblin
@@ -64,5 +82,35 @@ Lightning Bolt deals 3 damage to target creature or player.
 0 0 0 1 0 0
 Shock
 32 8
-Shock deals 3 damage to target creature or player.
+Shock deals 2 damage to target creature or player.
 0 0 0 1 0 0
+Forest Bear
+2 16
+Bear
+
+2 2
+0 0 0 0 1 1
+Great Wolf
+2 16
+Wolf
+
+4 2
+0 0 0 0 2 1
+A Beast
+2 16
+Beast
+
+3 3
+0 0 0 0 2 0
+Giant Wurm
+2 16
+Wurm
+
+6 4
+0 0 0 0 2 4
+Gianter Wurm
+2 16
+Wurm
+
+8 8
+0 0 0 0 3 5

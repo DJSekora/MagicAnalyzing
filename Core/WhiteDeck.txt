@@ -1,5 +1,6 @@
-4 Normal Guy
-4 Strong Man
+6 Normal Guy
+6 Strong Man
 4 Great Hero
 4 Blessing of the Angel
-12 Plains
+4 Eagle
+16 Plains

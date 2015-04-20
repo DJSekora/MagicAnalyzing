@@ -1,10 +1,12 @@
+** Add TUI interface for combat
+
+** Add TUI info feature to get verbose card info
+
 * Handle multiples of cards better (especially lands)
 
 * Add handling for tokens in Permanent
 
-* Add AI simulation of future boardstates plus a heuristic
-
-* Move spell resolution to BoardState
+* Better multiplayer support (specifically in combat)
 
 REACH EXTENSIONS:
 
