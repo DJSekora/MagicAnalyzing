@@ -5,6 +5,9 @@ import java.io.IOException;
 import java.util.Random;
 public class Player implements Targetable
 {
+  public static final int ATTACK_SEARCH_CUTOFF = 100;
+  public static final int BLOCK_SEARCH_CUTOFF = 10;
+
   public ArrayList<Card> creatures;
   public ArrayList<Card> lands;
 
@@ -72,17 +75,17 @@ public class Player implements Targetable
     this(pl, par);
 
     for(Card p:pl.creatures)
-      creatures.add(new Card(p, pl, m, n));
+      creatures.add(new Card(p, this, m, n));
     for(Card p:pl.lands)
-      lands.add(new Card(p, pl, m, n));
+      lands.add(new Card(p, this, m, n));
     for(Card c:pl.library)
-      library.add(new Card(c, pl, m, n));
+      library.add(new Card(c, this, m, n));
     for(Card c:pl.hand)
-      hand.add(new Card(c, pl, m, n));
+      hand.add(new Card(c, this, m, n));
     for(Card c:pl.graveyard)
-      graveyard.add(new Card(c, pl, m, n));
+      graveyard.add(new Card(c, this, m, n));
     for(Card c:pl.exile)
-      exile.add(new Card(c, pl, m, n));
+      exile.add(new Card(c, this, m, n));
 
     // Check to see if this player is a target
     int tempmax = m.numTargets();
@@ -97,17 +100,17 @@ public class Player implements Targetable
     this(pl,par);
 
     for(Card p:pl.creatures)
-      creatures.add(new Card(p, pl, m, n));
+      creatures.add(new Card(p, this, m, n));
     for(Card p:pl.lands)
-      lands.add(new Card(p, pl, m, n));
+      lands.add(new Card(p, this, m, n));
     for(Card c:pl.library)
-      library.add(new Card(c, pl, m, n));
+      library.add(new Card(c, this, m, n));
     for(Card c:pl.hand)
-      hand.add(new Card(c, pl, m, n));
+      hand.add(new Card(c, this, m, n));
     for(Card c:pl.graveyard)
-      graveyard.add(new Card(c, pl, m, n));
+      graveyard.add(new Card(c, this, m, n));
     for(Card c:pl.exile)
-      exile.add(new Card(c, pl, m, n));
+      exile.add(new Card(c, this, m, n));
   }
 
   /* Copy constructor for blocking (have to update the attackers array) */
@@ -116,17 +119,17 @@ public class Player implements Targetable
     this(pl,par);
 
     for(Card p:pl.creatures)
-      creatures.add(new Card(p, pl, m, n, atkm, atkn));
+      creatures.add(new Card(p, this, m, n, atkm, atkn));
     for(Card p:pl.lands)
-      lands.add(new Card(p, pl, m, n));
+      lands.add(new Card(p, this, m, n));
     for(Card c:pl.library)
-      library.add(new Card(c, pl, m, n));
+      library.add(new Card(c, this, m, n));
     for(Card c:pl.hand)
-      hand.add(new Card(c, pl, m, n));
+      hand.add(new Card(c, this, m, n));
     for(Card c:pl.graveyard)
-      graveyard.add(new Card(c, pl, m, n));
+      graveyard.add(new Card(c, this, m, n));
     for(Card c:pl.exile)
-      exile.add(new Card(c, pl, m, n));
+      exile.add(new Card(c, this, m, n));
   }
 
   // For Targetable
@@ -543,15 +546,43 @@ public class Player implements Targetable
     return moveList;
   }
 
+  public ArrayList<Card> getPossibleAttackers()
+  {
+    ArrayList<Card> possibleAttackers = new ArrayList<Card>();
+    for(Card c:creatures)
+    {
+      if(!(c.tapped || c.summoningsick))
+      { 
+        possibleAttackers.add(c);
+      }
+    }
+    return possibleAttackers;
+  }
+
+  public ArrayList<Card> getPossibleBlockers()
+  {
+    ArrayList<Card> possibleBlockers = new ArrayList<Card>();
+    for(Card c:creatures)
+    {
+      if(!c.tapped)
+      { 
+        possibleBlockers.add(c);
+      }
+    }
+    return possibleBlockers;
+  }
+
   /* Consider all combinations of attackers */
-  // TODO: Summoning sickness, haste, tapped, choice of target
+  // TODO: Choice of target
   public ArrayList<Card[]> determineAvailableAttackers()
   {
     ArrayList<Card[]> attackList = new ArrayList<Card[]>();
-    int maxAt = creatures.size();
+    ArrayList<Card> possAttackers = getPossibleAttackers();
+    int maxAt = possAttackers.size();
     int tot = (int)Math.pow(2,maxAt);
     Card[] cur;
     int numAt;
+
     for(int i=0; i < tot; i++)
     {
       numAt = countOnes(i);
@@ -562,7 +593,7 @@ public class Player implements Targetable
       {
         if(((i >> k)&1) == 1)
         {
-          cur[j] = creatures.get(k);
+          cur[j] = possAttackers.get(k);
           j++;
         }
         k++;
@@ -574,22 +605,56 @@ public class Player implements Targetable
 
   /* Consider all combinations of blockers 
    * Format: n*2 array of blocker-attacker pairs.
+   * FOR NOW, if there are too many possibilities we pick randomly.
    */
-  // TODO: tapped creatures can't block
 
   public ArrayList<Card[][]> determineAvailableBlockers()
   {
     ArrayList<Card[][]> blockList = new ArrayList<Card[][]>();
-    int maxBl = creatures.size();
+    ArrayList<Card> possBlockers = getPossibleBlockers();
+    int maxBl = possBlockers.size();
+
     Card[] attackers = parent.getAttackers();
     if(attackers == null)
       return blockList;
+
     int numAttackers = attackers.length;
     int adjNumAtk = numAttackers + 1; // Account for no block
     int tot = (int)Math.pow(adjNumAtk,maxBl); // (attackers + 1)^blockers total
     Card[][] cur; // Current block we are adding
     int numbl; // Number of blockers in this block
     int[] ind = new int[maxBl];
+
+    if(tot > BLOCK_SEARCH_CUTOFF)
+    {
+      Random random = new Random();
+      for(int i=0; i < BLOCK_SEARCH_CUTOFF; i++)
+      {
+        // Randomly generate a particular assignment of blockers
+        for(int j=0;j<maxBl;j++)
+        {
+          ind[j] = random.nextInt(adjNumAtk);
+        }
+
+        numbl = 0;
+        for(int j=0;j<maxBl;j++)
+          if(ind[j] > 0)
+            numbl++;
+        cur = new Card[numbl][2]; // store blocker and corresponding attacker
+        int k = 0;
+        for(int j=0;j<maxBl;j++)
+        {
+          if(ind[j] > 0)
+          {
+            cur[k][0] = possBlockers.get(j);
+            cur[k][1] = attackers[ind[j] - 1];
+            k++;
+          }
+        }
+  
+        blockList.add(cur);
+      }
+    }
 
     for(int i=0; i < tot; i++)
     {
@@ -603,7 +668,7 @@ public class Player implements Targetable
       {
         if(ind[j] > 0)
         {
-          cur[k][0] = creatures.get(j);
+          cur[k][0] = possBlockers.get(j);
           cur[k][1] = attackers[ind[j] - 1];
           k++;
         }
@@ -699,7 +764,29 @@ public class Player implements Targetable
       break;
 
      case BoardState.ATTACK:
-      if(cmd.matches("pass"))
+      if(cmd.matches("attack .*"))
+      {
+        String n = cmd.substring(7);
+        String[] atkers = n.split("+");
+        ArrayList<Card> declaredAttackers = new ArrayList<Card>();
+        for(String a:atkers)
+        {
+          for(Card c:getPossibleAttackers())
+          {
+            if(a.equalsIgnoreCase(c.name) && !declaredAttackers.contains(c))
+            {
+              declaredAttackers.add(c);
+              break;
+            }
+          }
+        }
+        if(declaredAttackers.size() > 0)
+        {
+          declareAttacks((Card[])declaredAttackers.toArray());
+          return(parent.phase == BoardState.BLOCK);
+        }
+      }
+      else if(cmd.matches("pass"))
       {
         endPhase();
         return(parent.phase == BoardState.BLOCK);

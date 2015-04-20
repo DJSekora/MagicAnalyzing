@@ -62,7 +62,7 @@ public class BoardState
     {
       players[i].loadDeck(deckFile[i]);
       players[i].shuffleDeck();
-      players[i].stackDeck();
+      //players[i].stackDeck();
       players[i].drawCards(STARTING_HAND_SIZE);
     }
   }
@@ -123,6 +123,11 @@ public class BoardState
     switch(phase)
     {
       case UNTAP:
+        phase = UPKEEP;
+        printMessage("Phase is now " + phaseName());
+        doUpkeep();
+        break;
+      case UPKEEP:
         phase = DRAW;
         printMessage("Phase is now " + phaseName());
         doDraw();
@@ -196,6 +201,13 @@ public class BoardState
     advancePhase();
   }
 
+  public void doUpkeep()
+  {
+    for(Card c:players[turn].creatures)
+      c.summoningsick = false;
+    advancePhase();
+  }
+
   public void doDraw()
   {
     players[turn].drawCard();
@@ -239,7 +251,7 @@ public class BoardState
   // TODO: Allowing for special creatures that block more than one (not bad)
   public void doCombatDamage()
   {
-    if(attackers!=null)
+    if(attackers!=null && attackers.length > 0)
     {
       for(Card a:attackers)
       {
@@ -413,11 +425,13 @@ public class BoardState
   // Placeholders for future event handling
   public void creatureEnteredBattlefield(Card c)
   {
+    c.summoningsick = true;
     printMessage(c.controller + " played " + c + ".");
   }
+
   public void creatureDied(Card c)
   {
-
+    printMessage(c.controller + "'s " + c + " died.");
   }
 
   /* Right now, we just print to standard output, but maybe someday we'll have a GUI or
@@ -425,7 +439,7 @@ public class BoardState
   public void printMessage(String s)
   {
     if(actual && !batch)
-    System.out.println(s);
+      System.out.println(s);
   }
 
   // Slightly modified version of the one in Move, for prettier printing.

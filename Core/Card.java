@@ -60,6 +60,7 @@ public class Card implements Targetable
   public String creatureType = "";
 
   public int remPower; // Special field for combat only used during combat damage.
+  public boolean summoningsick; // Creatures can't attack the turn they come into play
 
   public Card(String nname, int ntype, String ntext, int ncolor, int[] ncost)
   {

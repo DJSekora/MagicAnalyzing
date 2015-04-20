@@ -24,6 +24,11 @@ public class MagicBatch
       while(go)
       {
         eval.stepAI(currentState.getActivePlayer());
+        currentState.print();
+/*try{
+        Thread.sleep(500);
+}
+catch(Exception e){}*/
         go = !(currentState.gameOver());
       }
       win[currentState.getWinner()]++;
